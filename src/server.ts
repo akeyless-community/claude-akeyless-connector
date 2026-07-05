@@ -53,8 +53,12 @@ export function createMcpServer(client?: AkeylessClient): Server {
     tools: [
       {
         name: 'list-secrets',
+        title: 'List ARA Secrets',
         description:
           'List Akeyless dynamic and rotated secrets available for Agentic Runtime Authority (ARA). Returns metadata only — credentials are never exposed.',
+        annotations: {
+          readOnlyHint: true,
+        },
         inputSchema: {
           type: 'object',
           properties: {
@@ -67,8 +71,13 @@ export function createMcpServer(client?: AkeylessClient): Server {
       },
       {
         name: 'query-db',
+        title: 'Query Database',
         description:
           'Execute a database query using Akeyless dynamic or rotated secret credentials. Supports MySQL, PostgreSQL, MSSQL, Oracle, Snowflake, HanaDB, Redshift, MongoDB, Redis, and Cassandra.',
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: true,
+        },
         inputSchema: {
           type: 'object',
           properties: {
@@ -93,8 +102,13 @@ export function createMcpServer(client?: AkeylessClient): Server {
       },
       {
         name: 'service-execute',
+        title: 'Execute Service Action',
         description:
           'Execute an action against AWS, GCP, Azure, Kubernetes, or GitHub using Akeyless dynamic or rotated credentials. For OAuth-backed services, a follow-up call may require auth-code and state.',
+        annotations: {
+          readOnlyHint: false,
+          destructiveHint: true,
+        },
         inputSchema: {
           type: 'object',
           properties: {

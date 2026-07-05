@@ -2,7 +2,7 @@
   "manifest_version": "0.3",
   "name": "akeyless-connector",
   "display_name": "Akeyless Agentic Runtime Authority",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Securely access databases and cloud services through Akeyless without exposing credentials to Claude.",
   "icon": "icon.png",
   "long_description": "Connect Claude Desktop to [Akeyless Agentic Runtime Authority (ARA)](https://docs.akeyless.io/docs/agentic-runtime-authority) using the official [Akeyless Node.js SDK](https://www.npmjs.com/package/akeyless) — no CLI installation required.\n\n**Tools:** list-secrets · query-db · service-execute\n\nThe connector reports its version and the bundled SDK version on startup and in MCP server metadata.\n\n### Authentication\n\nSet **Authentication Method**, then fill in only the fields that apply:\n\n| Method | Fields to fill |\n|---|---|\n| `access_key` | Access ID + Access Key |\n| `saml` / `oidc` | Access ID (browser login on first use) |\n| `universal_identity` | UID Token File |\n| `jwt` | Access ID + JWT |\n| `aws_iam` / `azure_ad` / `gcp` | Access ID |",

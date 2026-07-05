@@ -1,6 +1,6 @@
 {
   "name": "@akeyless-community/claude-connector",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Akeyless Agentic Runtime Authority MCP connector for Claude Desktop — SDK-based, no CLI required",
   "license": "Apache-2.0",
   "author": "Akeyless Community",
@@ -23,7 +23,8 @@
     "node": ">=18"
   },
   "bin": {
-    "akeyless-claude-mcp": "./dist/index.js"
+    "akeyless-claude-mcp": "dist/index.js",
+    "claude-connector": "dist/index.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -35,7 +36,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && chmod +x dist/index.js",
     "start": "node dist/index.js",
     "dev": "tsc -p tsconfig.json --watch",
     "test": "jest",

@@ -4,6 +4,22 @@ An SDK-based MCP connector that brings [Akeyless Agentic Runtime Authority (ARA)
 
 Claude orchestrates. Akeyless holds the credentials. **Secret values never enter the model context.**
 
+## Install
+
+### npm / npx (manual Claude Desktop config)
+
+After the package is published:
+
+```bash
+npm install -g @akeyless-community/claude-connector
+```
+
+Or use `npx` without a global install — see [Manual MCP configuration](#manual-mcp-configuration-without-mcpb) below.
+
+### Claude Desktop extension (`.mcpb`)
+
+Download or build `claude-akeyless-connector.mcpb` and double-click to install. See [Install for Claude Desktop](#install-for-claude-desktop-recommended).
+
 ## How to use it (after install)
 
 Once the extension is installed and configured:
@@ -239,3 +255,37 @@ npm start
 ## License
 
 Apache-2.0
+
+## Privacy Policy
+
+This connector runs **locally on your machine** as a Claude Desktop extension or stdio MCP server. It does not send conversation content to Akeyless.
+
+**What the connector accesses**
+
+- Your configured **Akeyless Gateway** for authentication, secret listing, and ARA execution
+- Local files only when you configure Universal Identity (`uid_token_file`)
+
+**What is not collected by this open-source package**
+
+- No telemetry or analytics are built into the connector
+- Credentials you enter in Claude Desktop settings are stored in the OS keychain by Claude, not in this repository
+
+**Third-party services**
+
+- [Akeyless](https://www.akeyless.io/privacy-policy/) — your Gateway and tenant are operated by you or Akeyless per your deployment
+- [Anthropic / Claude Desktop](https://www.anthropic.com/privacy) — hosts the MCP client; tool inputs/outputs follow Claude’s policies
+
+**Data retention**
+
+- ARA session audit logs are retained per your Akeyless Gateway and Console settings
+- The connector holds auth tokens in memory only for the running process
+
+**Contact**
+
+- Issues: [github.com/akeyless-community/claude-akeyless-connector/issues](https://github.com/akeyless-community/claude-akeyless-connector/issues)
+- Akeyless: [akeyless.io](https://www.akeyless.io)
+
+## Publishing & directory submission
+
+- [docs/PUBLISHING.md](docs/PUBLISHING.md) — npm release process
+- [docs/DIRECTORY_AND_REMOTE.md](docs/DIRECTORY_AND_REMOTE.md) — Connectors Directory checklist and remote MCP variant
