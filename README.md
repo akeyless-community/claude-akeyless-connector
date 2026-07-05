@@ -90,9 +90,10 @@ sequenceDiagram
 
 | Tool | Purpose |
 |---|---|
-| `list-secrets` | List ARA-enabled dynamic and rotated secrets your role can access |
+| `list-secrets` | List ARA-enabled dynamic, rotated, and custom-MCP secrets your role can access |
 | `query-db` | Run database queries (MySQL, PostgreSQL, MongoDB, Redis, etc.) |
-| `service-execute` | Run AWS, GCP, Azure, Kubernetes, or GitHub actions |
+| `service-execute` | Run AWS, GCP, Azure, Kubernetes, GitHub, or custom MCP actions |
+| `list-sub-tools` | Optional: discover a service secret's sub-tool names/parameters before calling `service-execute` |
 
 These match the tools exposed by `akeyless mcp-runtime-authority`, but run through the SDK instead of the CLI.
 
@@ -247,7 +248,7 @@ npm start
 | Auth | CLI profile (`--profile`) | Env vars / Claude Desktop UI |
 | Gateway config | `--gateway-url` (ARA port) | Single `AKEYLESS_GATEWAY_URL` (derives `/api/v2` + config port) |
 | Install | Install CLI + configure profile | One-click `.mcpb` or `npx` |
-| Tools | list-secrets, query-db, service-execute | Same three tools |
+| Tools | list-secrets, query-db, service-execute, list-sub-tools | Same four tools |
 
 ## Related projects
 
