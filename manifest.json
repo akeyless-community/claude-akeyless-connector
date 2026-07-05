@@ -1,0 +1,123 @@
+{
+  "manifest_version": "0.3",
+  "name": "akeyless-connector",
+  "display_name": "Akeyless Agentic Runtime Authority",
+  "version": "0.2.4",
+  "description": "Securely access databases and cloud services through Akeyless without exposing credentials to Claude.",
+  "icon": "icon.png",
+  "long_description": "Connect Claude Desktop to [Akeyless Agentic Runtime Authority (ARA)](https://docs.akeyless.io/docs/agentic-runtime-authority) using the official [Akeyless Node.js SDK](https://www.npmjs.com/package/akeyless) — no CLI installation required.\n\n**Tools:** list-secrets · query-db · service-execute\n\nThe connector reports its version and the bundled SDK version on startup and in MCP server metadata.\n\n### Authentication\n\nSet **Authentication Method**, then fill in only the fields that apply:\n\n| Method | Fields to fill |\n|---|---|\n| `access_key` | Access ID + Access Key |\n| `saml` / `oidc` | Access ID (browser login on first use) |\n| `universal_identity` | UID Token File |\n| `jwt` | Access ID + JWT |\n| `aws_iam` / `azure_ad` / `gcp` | Access ID |",
+  "author": {
+    "name": "Akeyless Community",
+    "url": "https://www.akeyless.io"
+  },
+  "homepage": "https://docs.akeyless.io/docs/agentic-runtime-authority",
+  "documentation": "https://github.com/akeyless-community/claude-akeyless-connector",
+  "support": "https://github.com/akeyless-community/claude-akeyless-connector/issues",
+  "license": "Apache-2.0",
+  "privacy_policies": [
+    "https://www.akeyless.io/privacy-policy/"
+  ],
+  "keywords": [
+    "akeyless",
+    "secrets",
+    "database",
+    "cloud",
+    "agentic-runtime-authority",
+    "security"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/index.js"],
+      "env": {
+        "AKEYLESS_GATEWAY_URL": "${user_config.gateway_url}",
+        "AKEYLESS_ACCESS_TYPE": "${user_config.access_type}",
+        "AKEYLESS_ACCESS_ID": "${user_config.access_id}",
+        "AKEYLESS_ACCESS_KEY": "${user_config.access_key}",
+        "AKEYLESS_UID_TOKEN_FILE": "${user_config.uid_token_file}",
+        "AKEYLESS_JWT": "${user_config.jwt}",
+        "AKEYLESS_AGENT_ID": "${user_config.agent_id}",
+        "AKEYLESS_DEFAULT_SECRET_NAME": "${user_config.default_secret_name}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "list-secrets",
+      "description": "List ARA-enabled dynamic and rotated secrets available to the authenticated role"
+    },
+    {
+      "name": "query-db",
+      "description": "Execute a database query using server-side credentials via the Akeyless Gateway"
+    },
+    {
+      "name": "service-execute",
+      "description": "Execute cloud, Kubernetes, or GitHub actions using server-side credentials via the Akeyless Gateway"
+    }
+  ],
+  "tools_generated": false,
+  "compatibility": {
+    "claude_desktop": ">=1.0.0",
+    "platforms": ["darwin", "win32", "linux"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  },
+  "user_config": {
+    "gateway_url": {
+      "type": "string",
+      "title": "Gateway URL",
+      "description": "Your Akeyless Gateway address (e.g. https://gw.example.com:8000/api/v2). Auth and list-secrets use the /api/v2 path; ARA execution uses the config port automatically.",
+      "required": true
+    },
+    "access_type": {
+      "type": "string",
+      "title": "Authentication Method",
+      "description": "One of: access_key (default), saml, oidc, universal_identity, jwt, aws_iam, azure_ad, gcp. Only fill in the credential fields below that match your choice.",
+      "default": "access_key",
+      "required": true
+    },
+    "access_id": {
+      "type": "string",
+      "title": "Access ID",
+      "description": "Required for access_key, saml, oidc, jwt, and cloud IAM (aws_iam / azure_ad / gcp).",
+      "required": false
+    },
+    "access_key": {
+      "type": "string",
+      "title": "Access Key",
+      "description": "Required when Authentication Method is access_key. This is your Access Key secret (same credential type the CLI profile uses).",
+      "sensitive": true,
+      "required": false
+    },
+    "uid_token_file": {
+      "type": "file",
+      "title": "UID Token File",
+      "description": "Required when Authentication Method is universal_identity.",
+      "default": "${HOME}/.akeyless/uid_rotator/uid-token",
+      "required": false
+    },
+    "jwt": {
+      "type": "string",
+      "title": "JWT",
+      "description": "Required when Authentication Method is jwt (along with Access ID).",
+      "sensitive": true,
+      "required": false
+    },
+    "agent_id": {
+      "type": "string",
+      "title": "Agent ID",
+      "description": "Identifier for ARA session auditing in the Akeyless Console.",
+      "default": "claude-desktop",
+      "required": true
+    },
+    "default_secret_name": {
+      "type": "string",
+      "title": "Default secret path (optional)",
+      "description": "Default Akeyless path for query-db, same as CLI --secret-name.",
+      "required": false
+    }
+  }
+}

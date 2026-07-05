@@ -1,0 +1,61 @@
+{
+  "name": "@akeyless-community/claude-connector",
+  "version": "0.2.4",
+  "description": "Akeyless Agentic Runtime Authority MCP connector for Claude Desktop — SDK-based, no CLI required",
+  "license": "Apache-2.0",
+  "author": "Akeyless Community",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akeyless-community/claude-akeyless-connector.git"
+  },
+  "homepage": "https://github.com/akeyless-community/claude-akeyless-connector#readme",
+  "keywords": [
+    "akeyless",
+    "claude",
+    "anthropic",
+    "mcp",
+    "mcpb",
+    "agentic-runtime-authority",
+    "secrets",
+    "connector"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "bin": {
+    "akeyless-claude-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "manifest.json",
+    "icon.png",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsc -p tsconfig.json --watch",
+    "test": "jest",
+    "pack:mcpb": "npm run build && mcpb pack && node scripts/verify-pack.js",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "akeyless": "^5.0.26",
+    "akeyless-cloud-id": "^1.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.17.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.7.2"
+  }
+}
