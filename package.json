@@ -1,6 +1,6 @@
 {
   "name": "@akeyless-community/claude-connector",
-  "version": "0.2.5",
+  "version": "0.3.0",
   "description": "Akeyless Agentic Runtime Authority MCP connector for Claude Desktop — SDK-based, no CLI required",
   "license": "MIT",
   "author": "Akeyless Community",

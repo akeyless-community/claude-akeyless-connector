@@ -6,9 +6,11 @@ import {
   buildDiagnosticListItemsBody,
   diagnoseAraList,
   mapAraSecrets,
+  postListSubTools,
   postTargetQuery,
   type AraListDiagnostics,
   type AraSecretSummary,
+  type ListSubToolsResult,
   type TargetQueryResult,
 } from './ara';
 import { configFromEnv, validateConfig } from './config';
@@ -147,6 +149,8 @@ export class AkeylessClient {
     agentId?: string;
     authCode?: string;
     state?: string;
+    originalUser?: string;
+    originalPrompt?: string;
   }): Promise<TargetQueryResult> {
     const authHeader = await this.getGatewayAuthHeader();
     return postTargetQuery(this.config.araGatewayUrl, authHeader, {
@@ -156,6 +160,17 @@ export class AkeylessClient {
       mcp_id: this.config.mcpId,
       auth_code: input.authCode,
       state: input.state,
+      original_user: input.originalUser,
+      original_prompt: input.originalPrompt,
+    });
+  }
+
+  async listSubTools(input: { secretName: string; agentId?: string }): Promise<ListSubToolsResult> {
+    const authHeader = await this.getGatewayAuthHeader();
+    return postListSubTools(this.config.araGatewayUrl, authHeader, {
+      secret_name: input.secretName,
+      agent_id: input.agentId ?? this.config.agentId,
+      mcp_id: this.config.mcpId,
     });
   }
 }
