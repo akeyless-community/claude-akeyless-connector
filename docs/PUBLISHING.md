@@ -28,9 +28,7 @@ In [github.com/akeyless-community/claude-akeyless-connector/settings/secrets/act
 
 Create the token at [npmjs.com/settings/~/tokens](https://www.npmjs.com/settings/~/tokens).
 
-### 3. GitHub environment (optional)
-
-Create an `npm` environment in the repo if you want approval gates before publish.
+If this secret is missing, the **Publish to npm** workflow fails with `ENEEDAUTH`.
 
 ## Release workflow
 

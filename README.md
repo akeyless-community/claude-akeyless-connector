@@ -256,7 +256,7 @@ npm start
 
 ## License
 
-Apache-2.0
+MIT — see [LICENSE](LICENSE).
 
 ## Privacy Policy
 

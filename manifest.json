@@ -13,7 +13,7 @@
   "homepage": "https://docs.akeyless.io/docs/agentic-runtime-authority",
   "documentation": "https://github.com/akeyless-community/claude-akeyless-connector",
   "support": "https://github.com/akeyless-community/claude-akeyless-connector/issues",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "privacy_policies": [
     "https://www.akeyless.io/privacy-policy/"
   ],
