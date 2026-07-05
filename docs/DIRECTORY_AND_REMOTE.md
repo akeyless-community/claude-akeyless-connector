@@ -4,10 +4,10 @@ This connector ships in two distribution forms today:
 
 | Form | Status | Install |
 |---|---|---|
-| **Desktop extension (MCPB)** | Ready | Double-click `.mcpb` or org admin upload |
-| **npm package** | Ready after publish | `npx @akeyless-community/claude-connector` |
-| **Connectors Directory (MCPB listing)** | Requires submission | Anthropic review |
-| **Remote MCP connector** | Not built yet | Separate architecture |
+| **npm package** | Published | [`npx @akeyless-community/claude-connector`](https://www.npmjs.com/package/@akeyless-community/claude-connector) |
+| **Desktop extension (MCPB)** | Ready — submit to directory | [GitHub Releases](https://github.com/akeyless-community/claude-akeyless-connector/releases) |
+| **Connectors Directory (MCPB listing)** | Awaiting submission | [docs/SUBMISSION.md](SUBMISSION.md) |
+| **Remote MCP connector** | Not built yet | [docs/DIRECTORY_AND_REMOTE.md](DIRECTORY_AND_REMOTE.md) |
 
 ## Connectors Directory (desktop extension / MCPB)
 

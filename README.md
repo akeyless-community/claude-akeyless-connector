@@ -8,7 +8,7 @@ Claude orchestrates. Akeyless holds the credentials. **Secret values never enter
 
 ### npm / npx (manual Claude Desktop config)
 
-After the package is published:
+Published on npm as [`@akeyless-community/claude-connector`](https://www.npmjs.com/package/@akeyless-community/claude-connector):
 
 ```bash
 npm install -g @akeyless-community/claude-connector
@@ -18,7 +18,9 @@ Or use `npx` without a global install — see [Manual MCP configuration](#manual
 
 ### Claude Desktop extension (`.mcpb`)
 
-Download or build `claude-akeyless-connector.mcpb` and double-click to install. See [Install for Claude Desktop](#install-for-claude-desktop-recommended).
+Download the latest `.mcpb` from [GitHub Releases](https://github.com/akeyless-community/claude-akeyless-connector/releases) and double-click to install.
+
+Or build locally: `npm run pack:mcpb` → `claude-akeyless-connector.mcpb`
 
 ## How to use it (after install)
 
@@ -288,4 +290,5 @@ This connector runs **locally on your machine** as a Claude Desktop extension or
 ## Publishing & directory submission
 
 - [docs/PUBLISHING.md](docs/PUBLISHING.md) — npm release process
-- [docs/DIRECTORY_AND_REMOTE.md](docs/DIRECTORY_AND_REMOTE.md) — Connectors Directory checklist and remote MCP variant
+- [docs/SUBMISSION.md](docs/SUBMISSION.md) — Connectors Directory submission pack
+- [docs/DIRECTORY_AND_REMOTE.md](docs/DIRECTORY_AND_REMOTE.md) — remote MCP variant architecture
