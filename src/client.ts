@@ -27,6 +27,8 @@ export class AkeylessClient {
 
     const client = new akeyless.ApiClient();
     client.basePath = this.config.gatewayUrl.replace(/\/$/, '');
+    // Attribute Auth login (and SaaS SDK calls) to the ara product.
+    client.defaultHeaders['Akeyless-Product'] = 'ara';
     this.api = new akeyless.V2Api(client);
   }
 

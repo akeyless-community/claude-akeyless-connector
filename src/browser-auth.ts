@@ -33,6 +33,8 @@ export function buildAuthUrl(
   url.searchParams.set('access_id', accessId);
   url.searchParams.set('redirect_uri', redirectUri);
   url.searchParams.set('is_use_short_token', 'true');
+  // Same as Go AKEYLESS_PRODUCT=ara for SAML/OIDC login attribution.
+  url.searchParams.set('product', 'ara');
   return url.toString();
 }
 
