@@ -1,6 +1,7 @@
 declare module 'akeyless' {
   export class ApiClient {
     basePath: string;
+    defaultHeaders: Record<string, string>;
   }
 
   export class V2Api {

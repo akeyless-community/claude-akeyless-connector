@@ -10,7 +10,7 @@ describe('buildAuthUrl', () => {
     );
 
     expect(url).toBe(
-      'https://gw.example.com:8000/api/saml-login?access_id=p-abc123&redirect_uri=http%3A%2F%2F127.0.0.1%3A11136&is_use_short_token=true',
+      'https://gw.example.com:8000/api/saml-login?access_id=p-abc123&redirect_uri=http%3A%2F%2F127.0.0.1%3A11136&is_use_short_token=true&product=ara',
     );
   });
 
@@ -24,5 +24,6 @@ describe('buildAuthUrl', () => {
 
     expect(url).toContain('/api/oidc-login');
     expect(url).toContain('access_id=p-abc123');
+    expect(url).toContain('product=ara');
   });
 });
