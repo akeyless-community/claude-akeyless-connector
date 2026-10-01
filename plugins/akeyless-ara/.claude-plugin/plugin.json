@@ -1,0 +1,21 @@
+{
+  "name": "akeyless-ara",
+  "version": "0.3.1",
+  "description": "Secure database and cloud access through Akeyless Agentic Runtime Authority — credentials never enter the model context.",
+  "author": {
+    "name": "Akeyless Community",
+    "url": "https://www.akeyless.io"
+  },
+  "homepage": "https://docs.akeyless.io/docs/agentic-runtime-authority",
+  "repository": "https://github.com/akeyless-community/claude-akeyless-connector",
+  "license": "MIT",
+  "keywords": [
+    "akeyless",
+    "secrets",
+    "ara",
+    "database",
+    "cloud",
+    "security",
+    "mcp"
+  ]
+}

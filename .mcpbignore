@@ -8,3 +8,5 @@ coverage
 *.md
 !README.md
 claude-akeyless-connector.mcpb
+plugins
+.claude-plugin

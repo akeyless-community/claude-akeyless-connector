@@ -16,11 +16,25 @@ npm install -g @akeyless-community/claude-connector
 
 Or use `npx` without a global install — see [Manual MCP configuration](#manual-mcp-configuration-without-mcpb) below.
 
+### Claude plugin (recommended for directory / Enterprise)
+
+This repo is also a Claude **plugin marketplace**. Add it in Claude Desktop (Cowork → Customize → Browse plugins → Personal → Add marketplace) or Claude Code:
+
+```text
+akeyless-community/claude-akeyless-connector
+```
+
+Then install the **akeyless-ara** plugin. Requires Node.js 18+ and `AKEYLESS_*` env vars — see [plugins/akeyless-ara/README.md](plugins/akeyless-ara/README.md).
+
+Enterprise Owners can submit the same plugin path (`plugins/akeyless-ara`) to Anthropic’s directory via [claude.ai/directory/manage](https://claude.ai/directory/manage). Details: [docs/SUBMISSION.md](docs/SUBMISSION.md).
+
 ### Claude Desktop extension (`.mcpb`)
 
 Download the latest `.mcpb` from [GitHub Releases](https://github.com/akeyless-community/claude-akeyless-connector/releases) and double-click to install.
 
 Or build locally: `npm run pack:mcpb` → `claude-akeyless-connector.mcpb`
+
+> Anthropic no longer accepts standalone MCPB listings in the public Connectors Directory. Prefer the **plugin** path above for discoverability; keep `.mcpb` for one-click local installs.
 
 ## How to use it (after install)
 
@@ -291,5 +305,7 @@ This connector runs **locally on your machine** as a Claude Desktop extension or
 ## Publishing & directory submission
 
 - [docs/PUBLISHING.md](docs/PUBLISHING.md) — npm release process
-- [docs/SUBMISSION.md](docs/SUBMISSION.md) — Connectors Directory submission pack
+- [docs/SUBMISSION.md](docs/SUBMISSION.md) — **plugin** directory submission (Enterprise portal)
 - [docs/DIRECTORY_AND_REMOTE.md](docs/DIRECTORY_AND_REMOTE.md) — remote MCP variant architecture
+- [plugins/akeyless-ara](plugins/akeyless-ara) — Claude plugin package
+- [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) — self-hosted marketplace catalog

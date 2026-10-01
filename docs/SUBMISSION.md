@@ -1,38 +1,44 @@
-# Connectors Directory — Submission Pack
+# Claude directory — Plugin submission pack
 
-Use this document when completing Anthropic's **desktop extension interest form**:
+> **Update (2026):** Anthropic deprecated standalone **MCPB / desktop-extension** listings in the Connectors Directory. The supported path for this local ARA connector is a **plugin bundle** submitted from the Enterprise developer portal.
 
-https://docs.google.com/forms/d/14_Dmcig4z8NeRMB_e7TOyrKzuZ88-BLYdLvS6LPhiZU/viewform
-
-Escalations: `mcp-review@anthropic.com`
+**Portal:** https://claude.ai/directory/manage  
+**Escalations:** `directory@anthropic.com` (portal) · `mcp-review@anthropic.com` (legacy form)
 
 ---
 
-## Listing copy (pre-filled)
+## What to submit
+
+| Field | Value |
+|---|---|
+| **Submission type** | Plugin bundle |
+| **GitHub repository** | `akeyless-community/claude-akeyless-connector` |
+| **Plugin path** | `plugins/akeyless-ara` |
+| **Branch / tag** | `main` (or a release tag such as `v0.3.1`) |
+| **Marketplace (self-host)** | Repo root `.claude-plugin/marketplace.json` |
+
+---
+
+## Listing copy
 
 | Field | Value |
 |---|---|
 | **Name** | Akeyless Agentic Runtime Authority |
-| **Tagline** (≤55 chars) | Secure database & cloud access without exposing secrets |
-| **npm package** | `@akeyless-community/claude-connector` |
-| **GitHub** | https://github.com/akeyless-community/claude-akeyless-connector |
+| **Tagline** | Secure database & cloud access without exposing secrets |
+| **npm package** (runtime) | `@akeyless-community/claude-connector` |
 | **Documentation** | https://github.com/akeyless-community/claude-akeyless-connector#readme |
 | **Privacy policy** | https://www.akeyless.io/privacy-policy/ |
 | **Support** | https://github.com/akeyless-community/claude-akeyless-connector/issues |
 | **Company** | Akeyless |
 | **Website** | https://www.akeyless.io |
 
-### Description (for form)
+### Description
 
-Connect Claude Desktop to [Akeyless Agentic Runtime Authority (ARA)](https://docs.akeyless.io/docs/agentic-runtime-authority) using the official Akeyless Node.js SDK — no CLI required.
+Connect Claude to [Akeyless Agentic Runtime Authority (ARA)](https://docs.akeyless.io/docs/agentic-runtime-authority) using the official Akeyless Node.js SDK — no CLI required.
 
-**Tools:** `list-secrets` · `query-db` · `service-execute`
+**Tools:** `list-secrets` · `query-db` · `service-execute` · `list-sub-tools`
 
 Credentials stay in the Akeyless Gateway. Claude only sees query/action results, never long-lived secrets.
-
-**Install options:**
-- One-click `.mcpb` desktop extension
-- `npx @akeyless-community/claude-connector` for manual Claude Desktop config
 
 ### Categories (suggested)
 
@@ -40,94 +46,76 @@ Credentials stay in the Akeyless Gateway. Claude only sees query/action results,
 - Developer Tools
 - Data & Analytics
 
-### Use cases
+---
 
-- List ARA-enabled dynamic/rotated secrets the user's role can access
-- Run read-only or approved SQL against databases via dynamic secrets
-- Execute AWS, GCP, Azure, Kubernetes, or GitHub actions without exposing cloud credentials to the model
+## Portal steps (Enterprise Owner / Directory role)
 
-**Reads data:** yes (`list-secrets`, SELECT queries)  
-**Writes data:** yes (`query-db` DML, `service-execute` cloud/K8s actions — user approval required in Claude)
+1. Open https://claude.ai/directory/manage → **Submit new** → **Plugin bundle**
+2. Connect your GitHub account for this Claude organization
+3. Repository: `akeyless-community/claude-akeyless-connector`
+4. Plugin path: `plugins/akeyless-ara`
+5. Run **Validate**, fix any findings, then complete Data handling + Compliance
+6. **Submit for review** → when checks pass, **Publish**
 
-### Authentication
+### Parallel: org / customer installs without waiting
 
-Users configure their own Akeyless auth in the extension settings UI:
-- Access Key (default)
-- SAML / OIDC (browser login on first use)
-- Universal Identity, JWT, AWS IAM, Azure AD, GCP
+Users can add the marketplace today:
 
-No OAuth to Akeyless SaaS — credentials are stored in the OS keychain by Claude Desktop.
+```text
+Add marketplace from GitHub: akeyless-community/claude-akeyless-connector
+Install: akeyless-ara
+```
 
-### Tools & annotations
-
-| Tool | Title | Annotation |
-|---|---|---|
-| `list-secrets` | List ARA Secrets | `readOnlyHint: true` |
-| `query-db` | Query Database | `destructiveHint: true` |
-| `service-execute` | Execute Service Action | `destructiveHint: true` |
+Requires Node.js 18+ and `AKEYLESS_*` env vars (see plugin README).
 
 ---
 
 ## Reviewer test guide
 
-> **Fill in the bracketed placeholders before submitting.**
+> Fill in the bracketed placeholders before submitting.
 
 ### Prerequisites
 
-1. Claude Desktop ≥ 1.0.0 (macOS or Windows)
-2. Install the attached `.mcpb` from GitHub Release **v0.2.5**, or:
-   ```bash
-   npx -y @akeyless-community/claude-connector
-   ```
-
-### Configuration
+1. Claude Desktop or Cowork with plugins enabled
+2. Node.js ≥ 18
+3. Install plugin `akeyless-ara` from this repo (marketplace or directory listing)
+4. Set env:
 
 | Setting | Value |
 |---|---|
-| Gateway URL | `[GATEWAY_URL e.g. https://gw.example.com:8000/api/v2]` |
-| Authentication Method | `access_key` |
-| Access ID | `[ACCESS_ID]` |
-| Access Key | `[ACCESS_KEY]` |
-| Agent ID | `claude-reviewer` |
+| `AKEYLESS_GATEWAY_URL` | `[GATEWAY_URL e.g. https://gw.example.com:8000/api/v2]` |
+| `AKEYLESS_ACCESS_TYPE` | `access_key` |
+| `AKEYLESS_ACCESS_ID` | `[ACCESS_ID]` |
+| `AKEYLESS_ACCESS_KEY` | `[ACCESS_KEY]` |
+| `AKEYLESS_AGENT_ID` | `claude-reviewer` |
 
 ### Test steps
 
-1. **Enable extension** — Settings → Extensions → enable **Akeyless Agentic Runtime Authority**
-2. **list-secrets** — New chat → ask: *"Use list-secrets to show my ARA secrets"*
-   - Expected: JSON list with secret paths and target types (no credentials)
-3. **query-db** — Ask: *"Run `SELECT 1` against `[SECRET_PATH]` using query-db"*
-   - Expected: query result JSON; note says credentials were not exposed
-4. **service-execute** — Ask: *"Use service-execute on `[SERVICE_SECRET_PATH]` with payload `[SAFE_READ_ONLY_ACTION]`"*
-   - Expected: action result JSON
+1. Enable the plugin → start a **new** chat
+2. **list-secrets** — *"Use list-secrets to show my ARA secrets"*
+3. **query-db** — *"Run `SELECT 1` against `[DB_SECRET_PATH]` using query-db"*
+4. **service-execute** — *"Use service-execute on `[SERVICE_SECRET_PATH]` with payload `[SAFE_READ_ONLY_ACTION]`"*
+5. Optional — **list-sub-tools** on the service secret
 
 ### Sample ARA secrets on test tenant
 
 | Secret path | Type | Suggested test |
 |---|---|---|
-| `[DB_SECRET_PATH]` | postgres/mysql | `SELECT 1` |
+| `[DB_SECRET_PATH]` | postgres/mysql/snowflake | `SELECT 1` |
 | `[AWS_SECRET_PATH]` | aws | `list S3 buckets` (read-only) |
 
 ---
 
 ## Attachments checklist
 
-- [ ] `claude-akeyless-connector.mcpb` from [GitHub Release v0.2.5](https://github.com/akeyless-community/claude-akeyless-connector/releases/tag/v0.2.5)
-- [ ] `icon.png` (512×512 — included in repo root)
-- [ ] Completed reviewer credentials (section above)
+- [ ] Plugin path `plugins/akeyless-ara` on public `main`
+- [ ] `LICENSE` (MIT) inside the plugin folder
+- [ ] Plugin README + root Privacy Policy section
+- [ ] Reviewer credentials filled in above
+- [ ] `claude plugin validate ./plugins/akeyless-ara` (if Claude Code CLI available)
 
-## Allowed link URIs (if asked)
+## Legacy MCPB form
 
-Only needed for SAML/OIDC browser login during auth:
+The Google Form used for desktop extensions is obsolete for directory listing. If you previously submitted that form with no reply, email `mcp-review@anthropic.com` / `directory@anthropic.com` noting you are migrating to a **plugin bundle** via the Enterprise portal.
 
-- `https://[your-gateway-host]` (Gateway config port origin)
-
----
-
-## What you need to provide
-
-Before submitting, replace every `[PLACEHOLDER]` in the reviewer guide with a **dedicated demo tenant**:
-
-1. Gateway URL reachable from reviewer machines (public SaaS GW or VPN instructions)
-2. Access ID + Access Key for a least-privilege ARA reviewer role
-3. At least one DB dynamic secret and one service secret with ARA enabled + `ara_allow_access`
-4. Confirm macOS test passed on your side (Windows if available)
+The `.mcpb` release assets remain useful for **manual** Claude Desktop install (double-click), but they are no longer the directory submission vehicle.

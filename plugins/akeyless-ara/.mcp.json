@@ -1,0 +1,16 @@
+{
+  "akeyless": {
+    "command": "npx",
+    "args": ["-y", "@akeyless-community/claude-connector@0.3.1"],
+    "env": {
+      "AKEYLESS_GATEWAY_URL": "${AKEYLESS_GATEWAY_URL}",
+      "AKEYLESS_ACCESS_TYPE": "${AKEYLESS_ACCESS_TYPE}",
+      "AKEYLESS_ACCESS_ID": "${AKEYLESS_ACCESS_ID}",
+      "AKEYLESS_ACCESS_KEY": "${AKEYLESS_ACCESS_KEY}",
+      "AKEYLESS_UID_TOKEN_FILE": "${AKEYLESS_UID_TOKEN_FILE}",
+      "AKEYLESS_JWT": "${AKEYLESS_JWT}",
+      "AKEYLESS_AGENT_ID": "${AKEYLESS_AGENT_ID}",
+      "AKEYLESS_DEFAULT_SECRET_NAME": "${AKEYLESS_DEFAULT_SECRET_NAME}"
+    }
+  }
+}
