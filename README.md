@@ -6,9 +6,38 @@ Claude orchestrates. Akeyless holds the credentials. **Secret values never enter
 
 ## Install
 
+There are **two packaging modes** for the same MCP server. They look different in Claude — see **[docs/DISTRIBUTION.md](docs/DISTRIBUTION.md)** for the full comparison.
+
+| Mode | Use when | Config |
+|---|---|---|
+| **Desktop extension (`.mcpb`)** | Claude Desktop users who need a settings form | Gateway URL / Access ID / Key in the Extensions UI |
+| **Claude plugin (`akeyless-ara`)** | Marketplace / Anthropic directory discoverability | `AKEYLESS_*` environment variables (no MCPB-style form) |
+
+### Mode 1 — Claude Desktop extension (`.mcpb`) — settings UI
+
+Download the latest `.mcpb` from [GitHub Releases](https://github.com/akeyless-community/claude-akeyless-connector/releases) and double-click to install (or Settings → Extensions → Install Extension…).
+
+Claude shows a **configuration screen** (Gateway URL, auth method, Access ID / Access Key, Agent ID, …). Sensitive values go in the OS keychain.
+
+Or build locally: `npm run pack:mcpb` → `claude-akeyless-connector.mcpb`
+
+> Standalone MCPB listings are **not** accepted in Anthropic’s public directory anymore. Keep `.mcpb` for Desktop UX; use the plugin for directory listing.
+
+### Mode 2 — Claude plugin (marketplace / directory)
+
+This repo is a Claude **plugin marketplace**. Add it in Claude Desktop (Cowork → Customize → Browse plugins → Personal → Add marketplace) or Claude Code:
+
+```text
+akeyless-community/claude-akeyless-connector
+```
+
+Then install **akeyless-ara**. Requires Node.js 18+ and `AKEYLESS_*` env vars — see [plugins/akeyless-ara/README.md](plugins/akeyless-ara/README.md).
+
+You will **not** get the `.mcpb` settings form for this path. Enterprise Owners submit the same plugin (`plugins/akeyless-ara`) at [claude.ai/directory/manage](https://claude.ai/directory/manage) — [docs/SUBMISSION.md](docs/SUBMISSION.md).
+
 ### npm / npx (manual Claude Desktop config)
 
-Published on npm as [`@akeyless-community/claude-connector`](https://www.npmjs.com/package/@akeyless-community/claude-connector):
+Published as [`@akeyless-community/claude-connector`](https://www.npmjs.com/package/@akeyless-community/claude-connector):
 
 ```bash
 npm install -g @akeyless-community/claude-connector
@@ -16,32 +45,16 @@ npm install -g @akeyless-community/claude-connector
 
 Or use `npx` without a global install — see [Manual MCP configuration](#manual-mcp-configuration-without-mcpb) below.
 
-### Claude plugin (recommended for directory / Enterprise)
-
-This repo is also a Claude **plugin marketplace**. Add it in Claude Desktop (Cowork → Customize → Browse plugins → Personal → Add marketplace) or Claude Code:
-
-```text
-akeyless-community/claude-akeyless-connector
-```
-
-Then install the **akeyless-ara** plugin. Requires Node.js 18+ and `AKEYLESS_*` env vars — see [plugins/akeyless-ara/README.md](plugins/akeyless-ara/README.md).
-
-Enterprise Owners can submit the same plugin path (`plugins/akeyless-ara`) to Anthropic’s directory via [claude.ai/directory/manage](https://claude.ai/directory/manage). Details: [docs/SUBMISSION.md](docs/SUBMISSION.md).
-
-### Claude Desktop extension (`.mcpb`)
-
-Download the latest `.mcpb` from [GitHub Releases](https://github.com/akeyless-community/claude-akeyless-connector/releases) and double-click to install.
-
-Or build locally: `npm run pack:mcpb` → `claude-akeyless-connector.mcpb`
-
-> Anthropic no longer accepts standalone MCPB listings in the public Connectors Directory. Prefer the **plugin** path above for discoverability; keep `.mcpb` for one-click local installs.
-
 ## How to use it (after install)
 
-Once the extension is installed and configured:
+**Mode 1 (`.mcpb`):** configure fields in Settings → Extensions, enable the extension, start a new chat.  
+**Mode 2 (plugin):** set `AKEYLESS_*` env vars, enable the plugin, start a new chat.  
+See [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md) if you expected a config form and installed the plugin.
+
+Once the connector is active:
 
 1. **Open Claude Desktop** and start a new chat.
-2. **Check the connector is active** — go to **Settings → Connectors** (or the connector/tools panel) and confirm **Akeyless Agentic Runtime Authority** is enabled.
+2. **Confirm tools are available** — ask Claude to use Akeyless, or check the connector/tools panel.
 3. **Ask Claude in natural language.** Claude calls the connector tools automatically — you do not run CLI commands yourself.
 
 Example prompts:
@@ -304,8 +317,9 @@ This connector runs **locally on your machine** as a Claude Desktop extension or
 
 ## Publishing & directory submission
 
+- [docs/DISTRIBUTION.md](docs/DISTRIBUTION.md) — **two modes**: `.mcpb` vs plugin (when to use which)
 - [docs/PUBLISHING.md](docs/PUBLISHING.md) — npm release process
 - [docs/SUBMISSION.md](docs/SUBMISSION.md) — **plugin** directory submission (Enterprise portal)
-- [docs/DIRECTORY_AND_REMOTE.md](docs/DIRECTORY_AND_REMOTE.md) — remote MCP variant architecture
+- [docs/DIRECTORY_AND_REMOTE.md](docs/DIRECTORY_AND_REMOTE.md) — directory status + future remote MCP
 - [plugins/akeyless-ara](plugins/akeyless-ara) — Claude plugin package
 - [`.claude-plugin/marketplace.json`](.claude-plugin/marketplace.json) — self-hosted marketplace catalog

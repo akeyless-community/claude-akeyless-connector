@@ -1,6 +1,8 @@
 # Akeyless ARA plugin for Claude
 
-Claude plugin that packages the [Akeyless Agentic Runtime Authority](https://docs.akeyless.io/docs/agentic-runtime-authority) MCP connector (`@akeyless-community/claude-connector`).
+This is **Mode 2** of the Akeyless Claude integration: a **Claude plugin** for marketplace / directory install.
+
+For the **Desktop extension with a settings form** (Mode 1 — `.mcpb`), use the [GitHub Release `.mcpb`](https://github.com/akeyless-community/claude-akeyless-connector/releases) instead. Full comparison: [docs/DISTRIBUTION.md](../../docs/DISTRIBUTION.md).
 
 Claude orchestrates. Akeyless holds the credentials. **Secret values never enter the model context.**
 
@@ -21,7 +23,7 @@ Claude orchestrates. Akeyless holds the credentials. **Secret values never enter
 
 ## Configure credentials
 
-Set these environment variables before enabling the plugin (shell profile, Claude Desktop env, or org-managed settings):
+**This plugin does not show the MCPB configuration screen** (Gateway URL / Access Key fields under Extensions). Set environment variables before using the tools:
 
 ```bash
 export AKEYLESS_GATEWAY_URL="https://your-gateway.example.com:8000/api/v2"
@@ -31,7 +33,11 @@ export AKEYLESS_ACCESS_KEY="your-access-key"
 export AKEYLESS_AGENT_ID="claude-desktop"
 ```
 
+Fully quit and reopen Claude so the MCP process inherits the env. On macOS, apps started from Finder may not see shell exports — launch Claude from Terminal or use org-managed environment injection if needed.
+
 Other auth methods (`saml`, `oidc`, `jwt`, `universal_identity`, cloud IAM) are documented in the [connector README](../../README.md).
+
+If you need the install-time settings form, switch to **Mode 1** (`.mcpb`) — see [DISTRIBUTION.md](../../docs/DISTRIBUTION.md).
 
 ## Install
 
