@@ -1,18 +1,25 @@
 # Claude Connectors Directory & Remote Variant
 
-This connector ships in two distribution forms today:
+## Two packaging modes (same MCP server)
+
+Read **[DISTRIBUTION.md](DISTRIBUTION.md)** first. Summary:
+
+| Mode | Package | Discover in directory? | Config |
+|---|---|---|---|
+| **1 — Desktop extension** | `.mcpb` | No (MCPB listings deprecated) | Settings form (`user_config`) |
+| **2 — Claude plugin** | `plugins/akeyless-ara` | Yes (this path) | `AKEYLESS_*` env vars |
 
 | Form | Status | Install |
 |---|---|---|
 | **npm package** | Published | [`npx @akeyless-community/claude-connector`](https://www.npmjs.com/package/@akeyless-community/claude-connector) |
-| **Claude plugin + marketplace** | Ready | `plugins/akeyless-ara` · add marketplace `akeyless-community/claude-akeyless-connector` |
-| **Anthropic directory (plugin)** | Submit via Enterprise portal | [docs/SUBMISSION.md](SUBMISSION.md) · [claude.ai/directory/manage](https://claude.ai/directory/manage) |
-| **Desktop extension (MCPB)** | Manual install only | [GitHub Releases](https://github.com/akeyless-community/claude-akeyless-connector/releases) — **not** accepted as a standalone directory listing anymore |
+| **Claude plugin + marketplace** | Ready | Mode 2 — add marketplace `akeyless-community/claude-akeyless-connector` |
+| **Anthropic directory (plugin)** | Submit via Enterprise portal | [SUBMISSION.md](SUBMISSION.md) · [claude.ai/directory/manage](https://claude.ai/directory/manage) |
+| **Desktop extension (MCPB)** | Manual / org distribute | Mode 1 — [GitHub Releases](https://github.com/akeyless-community/claude-akeyless-connector/releases) |
 | **Remote MCP connector** | Not built yet | see below |
 
 ## Directory path (plugin bundle)
 
-Anthropic deprecated standalone MCPB listings. Local ARA is distributed as a **plugin** that launches the published npm MCP server via `npx`.
+Anthropic deprecated standalone MCPB listings. Local ARA is listed as a **plugin** that launches the published npm MCP server via `npx`. That does **not** restore the MCPB settings UI — see DISTRIBUTION.md.
 
 Docs: [Submit your plugin](https://claude.com/docs/plugins/submit) · [Submit a connector](https://claude.com/docs/connectors/building/submission)
 
@@ -24,6 +31,7 @@ Docs: [Submit your plugin](https://claude.com/docs/plugins/submit) · [Submit a 
 - [x] Repo marketplace catalog (`.claude-plugin/marketplace.json`)
 - [x] Root README privacy policy + npm package with tool annotations
 - [x] Public GitHub repo
+- [x] [DISTRIBUTION.md](DISTRIBUTION.md) — Mode 1 vs Mode 2 explained for users
 
 ### Still needed before portal publish
 
@@ -31,14 +39,16 @@ Docs: [Submit your plugin](https://claude.com/docs/plugins/submit) · [Submit a 
 2. Connect GitHub → submit plugin path `plugins/akeyless-ara`
 3. **Reviewer demo tenant** (Gateway URL, Access ID/Key, ARA secrets) — fill [SUBMISSION.md](SUBMISSION.md)
 4. Validate + submit + Publish when checks pass
+5. Optional: set up the GitHub **push webhook** under plugin Settings → Updates
 
 ### Submission checklist
 
 - [ ] Reviewer test account + populated ARA secrets
-- [ ] Plugin installed via marketplace and tools exercised
+- [ ] Plugin installed via marketplace and tools exercised (with env vars set)
 - [ ] Portal Validate passes
 - [ ] Submit for review / Publish
 - [ ] Email `directory@anthropic.com` if a legacy MCPB form submission is still open
+- [ ] Push webhook configured (optional but recommended)
 
 ---
 
@@ -48,13 +58,13 @@ The current connector is a **local stdio MCP server** that talks directly to **e
 
 A **remote MCP connector** is different:
 
-| | Local MCPB (current) | Remote MCP (future) |
+| | Local (Mode 1 / Mode 2 today) | Remote MCP (future) |
 |---|---|---|
 | Runs on | User's machine | Your HTTPS server |
 | Claude connects from | Local stdio | Anthropic cloud → your URL |
 | Gateway access | User's network | Must be reachable from your server |
-| Auth model | User config / env vars | OAuth 2.0 (directory requirement) |
-| Works with private GW | Yes | Only with custom-connection pattern |
+| Auth / config UI | MCPB form or env vars | OAuth or **custom connection** (Claude connection UI) |
+| Works with private GW | Yes | Only with custom-connection / broker patterns |
 
 Docs: [Remote MCP custom connectors](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp)
 
@@ -69,7 +79,7 @@ Docs: [Remote MCP custom connectors](https://support.claude.com/en/articles/1117
 **Option A — Custom connection (directory-friendly for multi-tenant SaaS)**
 
 - Host a public HTTPS MCP server (Streamable HTTP transport).
-- In the submission portal, choose **custom connection**: each user supplies their Gateway URL and credentials at connect time.
+- In the submission portal, choose **custom connection**: each user supplies their Gateway URL and credentials at connect time (this is the directory UX with a connection form).
 - Your server proxies auth + ARA calls to the user-provided Gateway.
 - Users must expose Gateway to your server's egress IPs (or use a SaaS Gateway).
 
@@ -80,18 +90,18 @@ Docs: [Remote MCP custom connectors](https://support.claude.com/en/articles/1117
 - Gateway calls originate from Akeyless infrastructure (same trust zone as today’s Console/API).
 - Requires product/backend work beyond this npm package.
 
-**Option C — Keep local-only (recommended for enterprise)**
+**Option C — Keep local-only (current recommendation for enterprise Gateways)**
 
-- Anthropic explicitly recommends MCPB for resources behind the firewall.
-- Directory listing as **desktop extension** covers discoverability without building remote infra.
+- Ship **Mode 1 (`.mcpb`)** for Desktop config UX and **Mode 2 (plugin)** for directory discoverability.
+- Anthropic recommends local packages for resources behind the firewall.
 
 ### Remote directory submission (when built)
 
-Uses the **Claude.ai admin submission portal** (Team / Enterprise org required):
+Uses the developer portal → **MCP connector**:
 
 1. Public HTTPS MCP URL (`https://…`)
 2. Streamable HTTP transport (SSE deprecated)
-3. OAuth 2.0 with `https://claude.ai/api/mcp/auth_callback` registered
+3. OAuth 2.0 and/or custom connection (user-supplied Gateway URL)
 4. Tool annotations on every tool
 5. Privacy policy, documentation, support contact
 6. Test account with end-to-end reviewer instructions
@@ -99,5 +109,5 @@ Uses the **Claude.ai admin submission portal** (Team / Enterprise org required):
 
 ### Recommended path
 
-1. **Now:** Publish npm package + submit **MCPB** to the Connectors Directory.
-2. **Later:** If you need claude.ai / mobile / Cowork without local install, design **Option A or B** as a separate service — not a packaging change to this repo.
+1. **Now:** npm + **Mode 1 `.mcpb`** (Desktop UX) + **Mode 2 plugin** (directory / marketplace) — see [DISTRIBUTION.md](DISTRIBUTION.md).
+2. **Later:** If you need claude.ai / mobile with an in-product connection form without local install, design **Option A or B** as a separate service — not a packaging change to this repo.

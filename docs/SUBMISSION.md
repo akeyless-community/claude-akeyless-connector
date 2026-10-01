@@ -1,9 +1,20 @@
 # Claude directory — Plugin submission pack
 
-> **Update (2026):** Anthropic deprecated standalone **MCPB / desktop-extension** listings in the Connectors Directory. The supported path for this local ARA connector is a **plugin bundle** submitted from the Enterprise developer portal.
+> **Update (2026):** Anthropic deprecated standalone **MCPB / desktop-extension** listings in the Connectors Directory. The supported path for **directory listing** is a **plugin bundle**. The `.mcpb` remains the best path for a **Desktop settings UI** — see [DISTRIBUTION.md](DISTRIBUTION.md) (two modes).
 
 **Portal:** https://claude.ai/directory/manage  
 **Escalations:** `directory@anthropic.com` (portal) · `mcp-review@anthropic.com` (legacy form)
+
+---
+
+## Two modes (read this first)
+
+| Mode | Package | Directory? | Config UI |
+|---|---|---|---|
+| **1 — Desktop extension** | `.mcpb` from [Releases](https://github.com/akeyless-community/claude-akeyless-connector/releases) | No (deprecated as a listing type) | **Yes** — Gateway / Access ID / Key form |
+| **2 — Claude plugin** | `plugins/akeyless-ara` (this submission) | **Yes** — this pack | Env vars (`AKEYLESS_*`), not the MCPB form |
+
+Submit **Mode 2** to the portal. Keep publishing **Mode 1** `.mcpb` assets on GitHub for users who need the configuration screen. Details: [DISTRIBUTION.md](DISTRIBUTION.md).
 
 ---
 
@@ -40,6 +51,8 @@ Connect Claude to [Akeyless Agentic Runtime Authority (ARA)](https://docs.akeyle
 
 Credentials stay in the Akeyless Gateway. Claude only sees query/action results, never long-lived secrets.
 
+**Install note for reviewers:** This directory listing is the **plugin** (env-based config). For the Claude Desktop settings form, reviewers may also use the `.mcpb` from GitHub Releases — see DISTRIBUTION.md.
+
 ### Categories (suggested)
 
 - Security
@@ -56,6 +69,7 @@ Credentials stay in the Akeyless Gateway. Claude only sees query/action results,
 4. Plugin path: `plugins/akeyless-ara`
 5. Run **Validate**, fix any findings, then complete Data handling + Compliance
 6. **Submit for review** → when checks pass, **Publish**
+7. Optional: **Settings → Updates → Set up** GitHub push webhook so `main` pushes are scanned within minutes
 
 ### Parallel: org / customer installs without waiting
 
@@ -66,7 +80,7 @@ Add marketplace from GitHub: akeyless-community/claude-akeyless-connector
 Install: akeyless-ara
 ```
 
-Requires Node.js 18+ and `AKEYLESS_*` env vars (see plugin README).
+Requires Node.js 18+ and `AKEYLESS_*` env vars (see plugin README). For a config form, give them the `.mcpb` instead.
 
 ---
 
@@ -118,4 +132,4 @@ Requires Node.js 18+ and `AKEYLESS_*` env vars (see plugin README).
 
 The Google Form used for desktop extensions is obsolete for directory listing. If you previously submitted that form with no reply, email `mcp-review@anthropic.com` / `directory@anthropic.com` noting you are migrating to a **plugin bundle** via the Enterprise portal.
 
-The `.mcpb` release assets remain useful for **manual** Claude Desktop install (double-click), but they are no longer the directory submission vehicle.
+The `.mcpb` release assets remain useful for **manual** Claude Desktop install with a settings UI (Mode 1), but they are no longer the directory submission vehicle.
