@@ -1,0 +1,25 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "akeyless-claude",
+  "description": "Akeyless plugins for Claude — Agentic Runtime Authority (ARA) secretless database and cloud access",
+  "owner": {
+    "name": "Akeyless Community",
+    "email": "support@akeyless.io",
+    "url": "https://www.akeyless.io"
+  },
+  "plugins": [
+    {
+      "name": "akeyless-ara",
+      "source": "./plugins/akeyless-ara",
+      "description": "Secure database and cloud access through Akeyless Agentic Runtime Authority — credentials never enter the model context.",
+      "version": "0.3.1",
+      "author": {
+        "name": "Akeyless Community",
+        "url": "https://www.akeyless.io"
+      },
+      "homepage": "https://docs.akeyless.io/docs/agentic-runtime-authority",
+      "category": "security",
+      "keywords": ["akeyless", "secrets", "ara", "database", "cloud", "mcp"]
+    }
+  ]
+}

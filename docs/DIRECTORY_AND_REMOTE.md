@@ -5,60 +5,40 @@ This connector ships in two distribution forms today:
 | Form | Status | Install |
 |---|---|---|
 | **npm package** | Published | [`npx @akeyless-community/claude-connector`](https://www.npmjs.com/package/@akeyless-community/claude-connector) |
-| **Desktop extension (MCPB)** | Ready — submit to directory | [GitHub Releases](https://github.com/akeyless-community/claude-akeyless-connector/releases) |
-| **Connectors Directory (MCPB listing)** | Awaiting submission | [docs/SUBMISSION.md](SUBMISSION.md) |
-| **Remote MCP connector** | Not built yet | [docs/DIRECTORY_AND_REMOTE.md](DIRECTORY_AND_REMOTE.md) |
+| **Claude plugin + marketplace** | Ready | `plugins/akeyless-ara` · add marketplace `akeyless-community/claude-akeyless-connector` |
+| **Anthropic directory (plugin)** | Submit via Enterprise portal | [docs/SUBMISSION.md](SUBMISSION.md) · [claude.ai/directory/manage](https://claude.ai/directory/manage) |
+| **Desktop extension (MCPB)** | Manual install only | [GitHub Releases](https://github.com/akeyless-community/claude-akeyless-connector/releases) — **not** accepted as a standalone directory listing anymore |
+| **Remote MCP connector** | Not built yet | see below |
 
-## Connectors Directory (desktop extension / MCPB)
+## Directory path (plugin bundle)
 
-Local MCPB connectors use the **desktop extension submission form**, not the remote MCP portal.
+Anthropic deprecated standalone MCPB listings. Local ARA is distributed as a **plugin** that launches the published npm MCP server via `npx`.
 
-Docs: [Submitting to the Connectors Directory](https://claude.com/docs/connectors/building/submission)
+Docs: [Submit your plugin](https://claude.com/docs/plugins/submit) · [Submit a connector](https://claude.com/docs/connectors/building/submission)
 
 ### Already in place
 
-- [x] `manifest.json` with `privacy_policies`
-- [x] `icon.png` (512×512)
-- [x] Tool `title` + `readOnlyHint` / `destructiveHint` annotations
-- [x] README with setup instructions
-- [x] Support URL (GitHub Issues)
-- [x] Documentation URL
+- [x] `plugins/akeyless-ara/.claude-plugin/plugin.json`
+- [x] `plugins/akeyless-ara/.mcp.json` (stdio → `@akeyless-community/claude-connector`)
+- [x] Skill + plugin README + MIT LICENSE
+- [x] Repo marketplace catalog (`.claude-plugin/marketplace.json`)
+- [x] Root README privacy policy + npm package with tool annotations
+- [x] Public GitHub repo
 
-### Still needed before submission
+### Still needed before portal publish
 
-1. **Test credentials for reviewers**
-   - Akeyless Gateway URL reachable from reviewer machines (or provide a shared demo tenant)
-   - Access ID + Access Key (or SAML/OIDC test account)
-   - At least one ARA-enabled dynamic secret with `ara_allow_access` on the role
-   - Step-by-step reviewer guide in the submission form
-
-2. **Cross-platform smoke test**
-   - macOS and Windows Claude Desktop
-   - All three tools exercised: `list-secrets`, `query-db`, `service-execute`
-
-3. **Privacy policy section in README**
-   - Required for local connectors (see README Privacy Policy section)
-
-4. **Build and attach the `.mcpb`**
-   ```bash
-   npm run pack:mcpb
-   ```
-   Submit `claude-akeyless-connector.mcpb` via the [desktop extension submission form](https://claude.com/docs/connectors/building/submission).
-
-5. **Optional: allowed link URIs**
-   - If SAML/OIDC browser login opens IdP URLs, declare owned origins in the submission (e.g. your Gateway host).
-
-6. **Public GitHub repo**
-   - Directory listing expects public documentation; make the repo public when ready.
+1. **Enterprise Owner** (or Directory role) opens [claude.ai/directory/manage](https://claude.ai/directory/manage)
+2. Connect GitHub → submit plugin path `plugins/akeyless-ara`
+3. **Reviewer demo tenant** (Gateway URL, Access ID/Key, ARA secrets) — fill [SUBMISSION.md](SUBMISSION.md)
+4. Validate + submit + Publish when checks pass
 
 ### Submission checklist
 
 - [ ] Reviewer test account + populated ARA secrets
-- [ ] macOS + Windows tested
-- [ ] Every tool run successfully in Claude Desktop
-- [ ] `.mcpb` built from tagged release
-- [ ] Desktop extension submission form completed
-- [ ] Respond to review feedback at `mcp-review@anthropic.com` if needed
+- [ ] Plugin installed via marketplace and tools exercised
+- [ ] Portal Validate passes
+- [ ] Submit for review / Publish
+- [ ] Email `directory@anthropic.com` if a legacy MCPB form submission is still open
 
 ---
 
