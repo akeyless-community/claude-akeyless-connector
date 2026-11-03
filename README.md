@@ -1,6 +1,6 @@
 # Akeyless Connector for Claude Desktop
 
-An SDK-based MCP connector that brings [Akeyless Agentic Runtime Authority (ARA)](https://docs.akeyless.io/docs/agentic-runtime-authority) to [Claude Desktop](https://claude.com/download) — without installing the Akeyless CLI.
+Claude Desktop plugin that connects the Akeyless Model Context Protocol (MCP) server to Claude, without installing or configuring the Akeyless CLI. AI agents can query databases, run actions on AWS, Azure, GCP and Kubernetes, and execute commands on Linux (SSH), Windows (WinRM) and LDAP / Active Directory servers through [Akeyless Agentic Runtime Authority (ARA)](https://docs.akeyless.io/docs/agentic-runtime-authority).
 
 Claude orchestrates. Akeyless holds the credentials. **Secret values never enter the model context.**
 
