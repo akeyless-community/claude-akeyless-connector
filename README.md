@@ -170,7 +170,7 @@ The payload is either a plain command line (`uptime`, `Get-Service`) or a sub-to
 - A run returns `stdout`, `stderr`, `exit_code`, `truncated`, and, when sent with `cwd` or run in PowerShell, the `cwd` the command ended in. Claude passes that `cwd` back on the next call, so a series of commands behaves like one shell session.
 - `list-sub-tools` on a remote item returns this catalog without connecting to the host.
 
-The same ARA gates apply as for databases: `ara_allow_access`, input rules (the Gateway ships default rules per target type), AI validation, output rules, and an ARA session record. Remote commands need a Gateway build that includes ARA remote command execution; an older Gateway rejects these items. A remote call can take up to 3.5 minutes on the Gateway.
+The same ARA gates apply as for databases: `ara_allow_access`, input rules (the Gateway ships default rules per target type), AI validation, output rules, and an ARA session record. Remote commands need Gateway 5.6.0 or later; an older Gateway answers `unsupported secret type`. A remote call can take up to 3.5 minutes on the Gateway.
 
 ## Install for Claude Desktop (recommended)
 
