@@ -25,7 +25,7 @@ Submit **Mode 2** to the portal. Keep publishing **Mode 1** `.mcpb` assets on Gi
 | **Submission type** | Plugin bundle |
 | **GitHub repository** | `akeyless-community/claude-akeyless-connector` |
 | **Plugin path** | `plugins/akeyless-ara` |
-| **Branch / tag** | `main` (or a release tag such as `v0.3.1`) |
+| **Branch / tag** | `main` (or a release tag such as `v0.4.0`) |
 | **Marketplace (self-host)** | Repo root `.claude-plugin/marketplace.json` |
 
 ---

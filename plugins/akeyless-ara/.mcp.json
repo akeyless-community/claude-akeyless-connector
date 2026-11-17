@@ -1,7 +1,7 @@
 {
   "akeyless": {
     "command": "npx",
-    "args": ["-y", "@akeyless-community/claude-connector@0.3.1"],
+    "args": ["-y", "@akeyless-community/claude-connector@0.4.0"],
     "env": {
       "AKEYLESS_GATEWAY_URL": "${AKEYLESS_GATEWAY_URL}",
       "AKEYLESS_ACCESS_TYPE": "${AKEYLESS_ACCESS_TYPE}",

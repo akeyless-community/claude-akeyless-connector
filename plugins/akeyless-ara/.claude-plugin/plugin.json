@@ -1,6 +1,6 @@
 {
   "name": "akeyless-ara",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Secure database and cloud access through Akeyless Agentic Runtime Authority — credentials never enter the model context.",
   "author": {
     "name": "Akeyless Community",
