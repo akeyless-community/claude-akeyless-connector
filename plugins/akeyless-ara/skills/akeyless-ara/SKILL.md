@@ -1,7 +1,7 @@
 ---
 name: akeyless-ara
 description: Use Akeyless Agentic Runtime Authority (ARA) to list secrets and run database queries, cloud actions, or remote commands on SSH, Windows, and LDAP hosts without exposing credentials. Trigger when the user asks about Akeyless secrets, ARA, query-db, service-execute, list-secrets, or secretless database, cloud, or server access through their Gateway.
-version: 0.3.1
+version: 0.4.0
 ---
 
 # Akeyless Agentic Runtime Authority

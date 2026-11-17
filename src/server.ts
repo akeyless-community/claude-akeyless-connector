@@ -6,9 +6,6 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import {
-  isAraDbProducerType,
-  isAraRemoteProducerType,
-  isAraServiceProducerType,
   OAuthAuthorizationRequiredError,
 } from './ara';
 import { AkeylessClient } from './client';
@@ -31,12 +28,22 @@ Credentials are used server-side via the Akeyless Gateway. Secret values never a
 
 Always provide agent-id for auditing. Use list-secrets before executing to confirm the secret path and target type.`;
 
-/** Builds a friendly, actionable message for an OAuth authorization-required response. */
-export function formatOAuthRequiredMessage(error: OAuthAuthorizationRequiredError): string {
+/**
+ * Builds the reply for an OAuth authorization-required response, worded like the
+ * Go handlers in `mcp_runtime_authority.go`: list-sub-tools has no auth-code or
+ * state parameters, so it points the agent at service-execute.
+ */
+export function formatOAuthRequiredMessage(error: OAuthAuthorizationRequiredError, toolName?: string): string {
+  const next =
+    toolName === 'list-sub-tools'
+      ? 'then call service-execute with the auth-code and state parameters to complete the flow.'
+      : 'then call this tool again with the auth-code and state parameters.';
   return (
     'This secret requires OAuth authorization. ' +
     'Please open the following URL in your browser to authorize, ' +
-    'then call this tool again with the auth-code and state parameters.\n\n' +
+    `${next}
+
+` +
     `Authorization URL: ${error.authorizationUrl}\nState: ${error.state}`
   );
 }
@@ -90,13 +97,13 @@ function buildQueryDbTool(defaultSecretName: string | undefined) {
       description: "The user's original natural-language request before the agent translated it into a query.",
     },
   };
-  const required = ['payload'];
+  const required = ['payload', 'agent-id', 'original-user', 'original-prompt'];
   if (!defaultSecretName) {
     Object.assign(
       properties,
       secretNameProperty('Full path of the Akeyless secret — dynamic or rotated (e.g. /MyFolder/my-mysql-ds).'),
     );
-    required.unshift('secret-name');
+    required.push('secret-name');
   }
 
   return {
@@ -153,13 +160,13 @@ function buildServiceExecuteTool(defaultSecretName: string | undefined) {
       description: "The user's original natural-language request before the agent translated it into an action.",
     },
   };
-  const required = ['payload'];
+  const required = ['payload', 'agent-id', 'original-user', 'original-prompt'];
   if (!defaultSecretName) {
     Object.assign(
       properties,
       secretNameProperty('Full path of the Akeyless secret — dynamic or rotated (e.g. /MyFolder/my-aws-ds).'),
     );
-    required.unshift('secret-name');
+    required.push('secret-name');
   }
 
   return {
@@ -210,7 +217,7 @@ function buildListSubToolsTool(defaultSecretName: string | undefined) {
       description: 'Agent identifier for auditing and session-scoped credential caching.',
     },
   };
-  const required: string[] = [];
+  const required = ['agent-id'];
   if (!defaultSecretName) {
     Object.assign(
       properties,
@@ -284,7 +291,7 @@ export function createMcpServer(client?: AkeylessClient): Server {
       };
     } catch (error) {
       if (error instanceof OAuthAuthorizationRequiredError) {
-        return { content: [{ type: 'text', text: formatOAuthRequiredMessage(error) }] };
+        return { content: [{ type: 'text', text: formatOAuthRequiredMessage(error, request.params.name) }] };
       }
       const message = error instanceof Error ? error.message : String(error);
       return {
@@ -329,21 +336,13 @@ export async function handleToolCall(
         .object({
           'secret-name': z.string().min(1).optional(),
           payload: z.string().min(1),
-          'agent-id': z.string().optional(),
+          'agent-id': z.string().min(1),
           'original-user': z.string().optional(),
           'original-prompt': z.string().optional(),
         })
         .parse(args);
 
       const secretName = resolveSecretName(client, input['secret-name']);
-
-      const secrets = await client.listAraSecrets();
-      const secret = secrets.find((s) => s.name === secretName);
-      if (secret?.target_type && !isAraDbProducerType(secret.target_type)) {
-        throw new Error(
-          `Secret "${secretName}" is not a database secret. Use service-execute instead.`,
-        );
-      }
 
       const result = await client.executeTargetQuery({
         secretName,
@@ -364,7 +363,7 @@ export async function handleToolCall(
         .object({
           'secret-name': z.string().min(1).optional(),
           payload: z.string().min(1),
-          'agent-id': z.string().optional(),
+          'agent-id': z.string().min(1),
           'auth-code': z.string().optional(),
           state: z.string().optional(),
           'original-user': z.string().optional(),
@@ -373,18 +372,6 @@ export async function handleToolCall(
         .parse(args);
 
       const secretName = resolveSecretName(client, input['secret-name']);
-
-      const secrets = await client.listAraSecrets();
-      const secret = secrets.find((s) => s.name === secretName);
-      if (
-        secret?.target_type &&
-        !isAraServiceProducerType(secret.target_type) &&
-        !isAraRemoteProducerType(secret.target_type)
-      ) {
-        throw new Error(
-          `Secret "${secretName}" is not a service secret or remote item. Use query-db instead.`,
-        );
-      }
 
       const result = await client.executeTargetQuery({
         secretName,
@@ -406,7 +393,7 @@ export async function handleToolCall(
       const input = z
         .object({
           'secret-name': z.string().min(1).optional(),
-          'agent-id': z.string().optional(),
+          'agent-id': z.string().min(1),
         })
         .parse(args);
 
