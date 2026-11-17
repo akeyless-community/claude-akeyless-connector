@@ -53,6 +53,55 @@ describe('handleToolCall: service-execute defaultSecretName', () => {
   });
 });
 
+describe('handleToolCall: remote command items', () => {
+  const remoteSecrets = [
+    { name: '/servers/web-ssh', secret_type: 'rotated-secret' as const, target_type: 'ssh' },
+    { name: '/servers/win-rdp', secret_type: 'dynamic-secret' as const, target_type: 'rdp' },
+    { name: '/ad/ops-ldap', secret_type: 'rotated-secret' as const, target_type: 'ldap' },
+    { name: '/ssh/ca', secret_type: 'ssh-cert-issuer' as const, target_type: 'ssh' },
+  ];
+
+  it.each(remoteSecrets.map((s) => [s.target_type, s.secret_type, s.name]))(
+    'runs a %s %s through service-execute and forwards the payload as is',
+    async (_targetType, _secretType, secretName) => {
+      const payload = '{"tool":"run","arguments":{"command":"uptime","host":"db1.corp","cwd":"/"}}';
+      const executeTargetQuery = jest.fn().mockResolvedValue({
+        target_type: 'ssh',
+        results: [{ stdout: 'up 3 days', stderr: '', exit_code: 0, truncated: false, cwd: '/' }],
+      });
+      const client = stubClient({ listAraSecrets: async () => remoteSecrets, executeTargetQuery });
+
+      const result = (await handleToolCall(client, 'service-execute', {
+        'secret-name': secretName,
+        payload,
+      })) as { results: Array<{ exit_code: number }> };
+
+      expect(executeTargetQuery).toHaveBeenCalledWith(expect.objectContaining({ secretName, payload }));
+      expect(result.results[0]?.exit_code).toBe(0);
+    },
+  );
+
+  it('points remote items at service-execute when called through query-db', async () => {
+    const executeTargetQuery = jest.fn();
+    const client = stubClient({ listAraSecrets: async () => remoteSecrets, executeTargetQuery });
+
+    await expect(
+      handleToolCall(client, 'query-db', { 'secret-name': '/servers/web-ssh', payload: 'uptime' }),
+    ).rejects.toThrow('Use service-execute instead');
+    expect(executeTargetQuery).not.toHaveBeenCalled();
+  });
+
+  it('still rejects database secrets on service-execute', async () => {
+    const client = stubClient({
+      listAraSecrets: async () => [{ name: '/db/pg', secret_type: 'dynamic-secret', target_type: 'postgres' }],
+    });
+
+    await expect(
+      handleToolCall(client, 'service-execute', { 'secret-name': '/db/pg', payload: 'uptime' }),
+    ).rejects.toThrow('Use query-db instead');
+  });
+});
+
 describe('handleToolCall: audit fields', () => {
   it('forwards original-user/original-prompt on query-db', async () => {
     const executeTargetQuery = jest.fn().mockResolvedValue({ target_type: 'mysql', results: [] });
@@ -132,8 +181,12 @@ describe('buildToolDefinitions: parity with ara_mcp_tools.go (no default secret)
   it('service-execute description and required fields match NewServiceExecuteTool', () => {
     const tool = byName['service-execute'];
     expect(tool.description).toBe(
-      'Execute an action against a service (AWS, GCP, Azure, Kubernetes, or GitHub) using Akeyless secret credentials (dynamic or rotated). ' +
-        "Accepts natural language or CLI-style payloads (e.g. 'list all S3 buckets', 'kubectl get pods -n default', 'list open PRs'). " +
+      'Execute an action against a service (AWS, GCP, Azure, Kubernetes, or GitHub) using Akeyless secret credentials (dynamic or rotated), ' +
+        'or run a single non-interactive command on a remote host: a shell command over SSH (SSH targets and SSH certificate issuers) or a PowerShell/CMD command over WinRM (Windows and LDAP items). ' +
+        'A remote command returns stdout, stderr, exit_code and cwd. ' +
+        "Accepts natural language or CLI-style payloads for services (e.g. 'list all S3 buckets', 'kubectl get pods -n default', 'list open PRs') and a literal command line for remote hosts (e.g. 'uptime', 'Get-Service'). " +
+        'To choose the host, the working directory or the shell, or to upload or download a file, send a remote item a sub-tool call as the payload, e.g. ' +
+        '{"tool":"run","arguments":{"command":"<command>","host":"<host>"}}; list-sub-tools returns the remote sub-tools and their arguments. ' +
         'Returns the results as JSON. Credentials are never exposed. ' +
         'IMPORTANT: Always ask the user for the secret name if it was not provided. Use the list-secrets tool to discover available secrets.',
     );
@@ -155,7 +208,7 @@ describe('buildToolDefinitions: parity with ara_mcp_tools.go (no default secret)
   it('list-sub-tools description and required fields match NewListSubToolsTool', () => {
     const tool = byName['list-sub-tools'];
     expect(tool.description).toBe(
-      'OPTIONAL helper for service secrets only (NOT for database secrets — query-db does not need this). ' +
+      'OPTIONAL helper for service secrets and remote items (SSH, Windows, LDAP, SSH certificate issuers); NOT for database secrets — query-db does not need this. ' +
         'Lists the sub-tools (and their parameters) that the service behind the given secret exposes. ' +
         'This call is never required: service-execute already accepts natural language or CLI-style payloads. ' +
         'Use it only when you want to discover the exact sub-tool name and parameters before calling service-execute, ' +

@@ -22,6 +22,22 @@ export const ARA_SERVICE_PRODUCER_TYPES = new Set([
 ]);
 
 /**
+ * Kinds executed as a remote command on a host over SSH or WinRM, matching
+ * `types.ARARemoteProducerTypes`: the producer type of a dynamic secret (rdp,
+ * ldap) or the target type of a rotated secret (ssh, windows, ldap, linked).
+ */
+export const ARA_REMOTE_PRODUCER_TYPES = new Set([
+  'ssh',
+  'windows',
+  'rdp',
+  'ldap',
+  'linked',
+]);
+
+/** `secret_type` of an SSH certificate issuer, matching `types.ARASecretTypeSSHCertIssuer`. */
+export const SSH_CERT_ISSUER_SECRET_TYPE = 'ssh-cert-issuer';
+
+/**
  * Synthetic target-type label for static-secret MCP configs, matching the Go
  * gateway's `types.CustomMCPTargetType`. Not a registered Akeyless target
  * type — it only labels custom-MCP secrets in list-secrets output.
@@ -38,14 +54,23 @@ export function isAraServiceProducerType(producerType: string): boolean {
   return ARA_SERVICE_PRODUCER_TYPES.has(normalized) || normalized === CUSTOM_MCP_TARGET_TYPE;
 }
 
+/** Remote items run one command (or file transfer) on a host; they are called through service-execute. */
+export function isAraRemoteProducerType(producerType: string): boolean {
+  return ARA_REMOTE_PRODUCER_TYPES.has(producerType.toLowerCase());
+}
+
 export function isAraSupportedProducerType(producerType: string): boolean {
   const normalized = producerType.toLowerCase();
-  return ARA_DB_PRODUCER_TYPES.has(normalized) || ARA_SERVICE_PRODUCER_TYPES.has(normalized);
+  return (
+    ARA_DB_PRODUCER_TYPES.has(normalized) ||
+    ARA_SERVICE_PRODUCER_TYPES.has(normalized) ||
+    ARA_REMOTE_PRODUCER_TYPES.has(normalized)
+  );
 }
 
 export interface AraSecretSummary {
   name: string;
-  secret_type: 'dynamic-secret' | 'rotated-secret' | 'static-secret';
+  secret_type: 'dynamic-secret' | 'rotated-secret' | 'static-secret' | typeof SSH_CERT_ISSUER_SECRET_TYPE;
   target_type?: string;
   description?: string;
 }
@@ -83,10 +108,10 @@ export function normalizeItemType(raw: string | undefined): string {
 
 /**
  * Item types requested from list-items for ARA list-secrets. Matches
- * `akeyless mcp-runtime-authority`: dynamic + rotated + static (custom-MCP)
- * secrets — see `mcp_runtime_authority.go`'s `client.ListItems` call.
+ * `types.ARAItemTypes` used by `akeyless mcp-runtime-authority`: dynamic +
+ * rotated + static (custom-MCP) secrets and SSH certificate issuers.
  */
-const ARA_LIST_ITEM_TYPES = ['dynamic-secret', 'rotated-secret', 'static-secret'];
+const ARA_LIST_ITEM_TYPES = ['dynamic-secret', 'rotated-secret', 'static-secret', 'ssh-cert-issuer'];
 
 /**
  * Build the POST /list-items body for ARA list-secrets.
@@ -140,6 +165,10 @@ function isRotatedSecretItem(itemType: string): boolean {
 
 function isStaticSecretItem(itemType: string): boolean {
   return normalizeItemType(itemType) === 'static-secret';
+}
+
+function isSshCertIssuerItem(itemType: string): boolean {
+  return normalizeItemType(itemType) === 'ssh-cert-issuer';
 }
 
 function extractDynamicProducerType(item: AraListItem): string | undefined {
@@ -198,6 +227,18 @@ export function mapAraSecrets(items: AraListItem[]): AraSecretSummary[] {
         target_type: CUSTOM_MCP_TARGET_TYPE,
         description: item.item_metadata?.trim() || undefined,
       });
+      continue;
+    }
+
+    if (isSshCertIssuerItem(itemType)) {
+      // Commands run over SSH with a certificate signed for the call,
+      // matching the Go gateway's `ListARASecrets` SSHCertIssuer case.
+      results.push({
+        name: item.item_name,
+        secret_type: SSH_CERT_ISSUER_SECRET_TYPE,
+        target_type: 'ssh',
+        description: item.item_metadata?.trim() || undefined,
+      });
     }
   }
 
@@ -253,7 +294,7 @@ export function diagnoseAraList(items: AraListItem[]): AraListDiagnostics {
       continue;
     }
 
-    if (isStaticSecretItem(itemType)) {
+    if (isStaticSecretItem(itemType) || isSshCertIssuerItem(itemType)) {
       continue;
     }
 
