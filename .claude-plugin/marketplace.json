@@ -12,7 +12,7 @@
       "name": "akeyless-ara",
       "source": "./plugins/akeyless-ara",
       "description": "Secure database and cloud access through Akeyless Agentic Runtime Authority — credentials never enter the model context.",
-      "version": "0.3.1",
+      "version": "0.4.0",
       "author": {
         "name": "Akeyless Community",
         "url": "https://www.akeyless.io"
