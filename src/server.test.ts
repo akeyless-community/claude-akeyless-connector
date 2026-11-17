@@ -38,7 +38,7 @@ describe('handleToolCall: service-execute defaultSecretName', () => {
       executeTargetQuery,
     });
 
-    await handleToolCall(client, 'service-execute', { payload: 'list buckets' });
+    await handleToolCall(client, 'service-execute', { payload: 'list buckets', 'agent-id': 'agent-1' });
 
     expect(executeTargetQuery).toHaveBeenCalledWith(
       expect.objectContaining({ secretName: '/aws/devops', payload: 'list buckets' }),
@@ -47,9 +47,65 @@ describe('handleToolCall: service-execute defaultSecretName', () => {
 
   it('requires secret-name when no default is configured', async () => {
     const client = stubClient();
-    await expect(handleToolCall(client, 'service-execute', { payload: 'list buckets' })).rejects.toThrow(
+    await expect(handleToolCall(client, 'service-execute', { payload: 'list buckets', 'agent-id': 'agent-1' })).rejects.toThrow(
       'secret-name is required',
     );
+  });
+});
+
+describe('handleToolCall: remote command items', () => {
+  const remoteSecrets = [
+    { name: '/servers/web-ssh', secret_type: 'rotated-secret' as const, target_type: 'ssh' },
+    { name: '/servers/win-rdp', secret_type: 'dynamic-secret' as const, target_type: 'rdp' },
+    { name: '/ad/ops-ldap', secret_type: 'rotated-secret' as const, target_type: 'ldap' },
+    { name: '/ssh/ca', secret_type: 'ssh-cert-issuer' as const, target_type: 'ssh' },
+  ];
+
+  it.each(remoteSecrets.map((s) => [s.target_type, s.secret_type, s.name]))(
+    'runs a %s %s through service-execute and forwards the payload as is',
+    async (_targetType, _secretType, secretName) => {
+      const payload = '{"tool":"run","arguments":{"command":"uptime","host":"db1.corp","cwd":"/"}}';
+      const executeTargetQuery = jest.fn().mockResolvedValue({
+        target_type: 'ssh',
+        results: [{ stdout: 'up 3 days', stderr: '', exit_code: 0, truncated: false, cwd: '/' }],
+      });
+      const client = stubClient({ listAraSecrets: async () => remoteSecrets, executeTargetQuery });
+
+      const result = (await handleToolCall(client, 'service-execute', {
+        'secret-name': secretName,
+        payload,
+        'agent-id': 'agent-1',
+      })) as { results: Array<{ exit_code: number }> };
+
+      expect(executeTargetQuery).toHaveBeenCalledWith(expect.objectContaining({ secretName, payload }));
+      expect(result.results[0]?.exit_code).toBe(0);
+    },
+  );
+
+  it.each([
+    ['query-db', '/servers/web-ssh', 'uptime'],
+    ['service-execute', '/db/pg', 'SELECT 1'],
+  ])('forwards %s on %s to the gateway without a client-side type check, like Go', async (tool, secretName, payload) => {
+    const listAraSecrets = jest.fn();
+    const executeTargetQuery = jest.fn().mockResolvedValue({ target_type: 'ssh', results: [] });
+    const client = stubClient({ listAraSecrets, executeTargetQuery });
+
+    await handleToolCall(client, tool, { 'secret-name': secretName, payload, 'agent-id': 'agent-1' });
+
+    expect(executeTargetQuery).toHaveBeenCalledWith(expect.objectContaining({ secretName, payload }));
+    expect(listAraSecrets).not.toHaveBeenCalled();
+  });
+
+  it.each(['query-db', 'service-execute', 'list-sub-tools'])('%s requires agent-id, like Go', async (tool) => {
+    const executeTargetQuery = jest.fn();
+    const listSubTools = jest.fn();
+    const client = stubClient({ executeTargetQuery, listSubTools });
+
+    await expect(handleToolCall(client, tool, { 'secret-name': '/servers/web-ssh', payload: 'uptime' })).rejects.toThrow(
+      'agent-id',
+    );
+    expect(executeTargetQuery).not.toHaveBeenCalled();
+    expect(listSubTools).not.toHaveBeenCalled();
   });
 });
 
@@ -61,6 +117,7 @@ describe('handleToolCall: audit fields', () => {
     await handleToolCall(client, 'query-db', {
       'secret-name': '/db/mysql-ds',
       payload: 'SELECT 1',
+      'agent-id': 'agent-1',
       'original-user': 'alice',
       'original-prompt': 'how many rows are there?',
     });
@@ -126,14 +183,18 @@ describe('buildToolDefinitions: parity with ara_mcp_tools.go (no default secret)
     expect(tool.inputSchema.properties['original-prompt']?.description).toBe(
       "The user's original natural-language request before the agent translated it into a query.",
     );
-    expect(tool.inputSchema.required).toEqual(['secret-name', 'payload']);
+    expect(tool.inputSchema.required).toEqual(['payload', 'agent-id', 'original-user', 'original-prompt', 'secret-name']);
   });
 
   it('service-execute description and required fields match NewServiceExecuteTool', () => {
     const tool = byName['service-execute'];
     expect(tool.description).toBe(
-      'Execute an action against a service (AWS, GCP, Azure, Kubernetes, or GitHub) using Akeyless secret credentials (dynamic or rotated). ' +
-        "Accepts natural language or CLI-style payloads (e.g. 'list all S3 buckets', 'kubectl get pods -n default', 'list open PRs'). " +
+      'Execute an action against a service (AWS, GCP, Azure, Kubernetes, or GitHub) using Akeyless secret credentials (dynamic or rotated), ' +
+        'or run a single non-interactive command on a remote host: a shell command over SSH (SSH targets and SSH certificate issuers) or a PowerShell/CMD command over WinRM (Windows and LDAP items). ' +
+        'A remote command returns stdout, stderr, exit_code and cwd. ' +
+        "Accepts natural language or CLI-style payloads for services (e.g. 'list all S3 buckets', 'kubectl get pods -n default', 'list open PRs') and a literal command line for remote hosts (e.g. 'uptime', 'Get-Service'). " +
+        'To choose the host, the working directory or the shell, or to upload or download a file, send a remote item a sub-tool call as the payload, e.g. ' +
+        '{"tool":"run","arguments":{"command":"<command>","host":"<host>"}}; list-sub-tools returns the remote sub-tools and their arguments. ' +
         'Returns the results as JSON. Credentials are never exposed. ' +
         'IMPORTANT: Always ask the user for the secret name if it was not provided. Use the list-secrets tool to discover available secrets.',
     );
@@ -149,13 +210,13 @@ describe('buildToolDefinitions: parity with ara_mcp_tools.go (no default secret)
     expect(tool.inputSchema.properties['state']?.description).toBe(
       'OAuth state parameter returned with the authorization URL. Must be passed back together with auth-code.',
     );
-    expect(tool.inputSchema.required).toEqual(['secret-name', 'payload']);
+    expect(tool.inputSchema.required).toEqual(['payload', 'agent-id', 'original-user', 'original-prompt', 'secret-name']);
   });
 
   it('list-sub-tools description and required fields match NewListSubToolsTool', () => {
     const tool = byName['list-sub-tools'];
     expect(tool.description).toBe(
-      'OPTIONAL helper for service secrets only (NOT for database secrets — query-db does not need this). ' +
+      'OPTIONAL helper for service secrets and remote items (SSH, Windows, LDAP, SSH certificate issuers); NOT for database secrets — query-db does not need this. ' +
         'Lists the sub-tools (and their parameters) that the service behind the given secret exposes. ' +
         'This call is never required: service-execute already accepts natural language or CLI-style payloads. ' +
         'Use it only when you want to discover the exact sub-tool name and parameters before calling service-execute, ' +
@@ -168,7 +229,7 @@ describe('buildToolDefinitions: parity with ara_mcp_tools.go (no default secret)
     expect(tool.inputSchema.properties['secret-name']?.description).toBe(
       'Full path of the Akeyless secret. Must be a service secret (e.g. AWS, GCP, Azure, Kubernetes, GitHub, custom MCP) — not a database secret.',
     );
-    expect(tool.inputSchema.required).toEqual(['secret-name']);
+    expect(tool.inputSchema.required).toEqual(['agent-id', 'secret-name']);
   });
 
   it('list-secrets description matches NewListSecretsTool', () => {
@@ -201,6 +262,19 @@ describe('formatOAuthRequiredMessage', () => {
     );
     expect(message).toContain('Authorization URL: https://auth.example.com/authorize');
     expect(message).toContain('State: state-123');
-    expect(message).toContain('auth-code and state parameters');
+    expect(message).toContain('then call this tool again with the auth-code and state parameters.');
+  });
+
+  it('points list-sub-tools at service-execute, like Go listSubToolsHandler', () => {
+    const message = formatOAuthRequiredMessage(
+      new OAuthAuthorizationRequiredError('https://auth.example.com/authorize', 'state-123'),
+      'list-sub-tools',
+    );
+    expect(message).toBe(
+      'This secret requires OAuth authorization. ' +
+        'Please open the following URL in your browser to authorize, ' +
+        'then call service-execute with the auth-code and state parameters to complete the flow.\n\n' +
+        'Authorization URL: https://auth.example.com/authorize\nState: state-123',
+    );
   });
 });

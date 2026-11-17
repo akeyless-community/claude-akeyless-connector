@@ -12,8 +12,8 @@ Claude orchestrates. Akeyless holds the credentials. **Secret values never enter
 |---|---|
 | `list-secrets` | List ARA-enabled dynamic, rotated, and custom-MCP secrets |
 | `query-db` | Run database queries via the Gateway |
-| `service-execute` | Run AWS / GCP / Azure / K8s / GitHub / custom-MCP actions |
-| `list-sub-tools` | Optional discovery helper for service secrets |
+| `service-execute` | Run AWS / GCP / Azure / K8s / GitHub / custom-MCP actions, or a remote command on SSH / Windows / LDAP hosts |
+| `list-sub-tools` | Optional discovery helper for service secrets and remote items |
 
 ## Prerequisites
 

@@ -2,7 +2,9 @@ import {
   buildAraListItemsBody,
   buildDiagnosticListItemsBody,
   CUSTOM_MCP_TARGET_TYPE,
+  diagnoseAraList,
   isAraDbProducerType,
+  isAraRemoteProducerType,
   isAraServiceProducerType,
   isAraSupportedProducerType,
   mapAraSecrets,
@@ -27,18 +29,28 @@ describe('ara producer types', () => {
     expect(isAraServiceProducerType(CUSTOM_MCP_TARGET_TYPE)).toBe(true);
   });
 
+  it('identifies remote command producers like types.ARARemoteProducerTypes', () => {
+    for (const type of ['ssh', 'windows', 'rdp', 'ldap', 'linked', 'SSH']) {
+      expect(isAraRemoteProducerType(type)).toBe(true);
+    }
+    expect(isAraRemoteProducerType('aws')).toBe(false);
+    expect(isAraRemoteProducerType('mysql')).toBe(false);
+    expect(isAraServiceProducerType('ssh')).toBe(false);
+  });
+
   it('combines supported producers', () => {
     expect(isAraSupportedProducerType('github')).toBe(true);
+    expect(isAraSupportedProducerType('ldap')).toBe(true);
     expect(isAraSupportedProducerType('vault')).toBe(false);
   });
 });
 
 describe('buildAraListItemsBody', () => {
-  it('sets ara-only like mcp-runtime-authority, including static (custom-MCP) secrets', () => {
+  it('sets ara-only like mcp-runtime-authority, including static (custom-MCP) secrets and SSH certificate issuers', () => {
     expect(buildAraListItemsBody('t-test')).toEqual({
       token: 't-test',
       filter: '',
-      type: ['dynamic-secret', 'rotated-secret', 'static-secret'],
+      type: ['dynamic-secret', 'rotated-secret', 'static-secret', 'ssh-cert-issuer'],
       'ara-only': true,
       'advanced-filter': '',
     });
@@ -131,6 +143,69 @@ describe('mapAraSecrets', () => {
       target_type: CUSTOM_MCP_TARGET_TYPE,
       description: 'custom MCP server',
     });
+  });
+});
+
+describe('mapAraSecrets: remote command items', () => {
+  it('lists SSH, Windows, LDAP and linked rotated secrets and RDP and LDAP dynamic secrets', () => {
+    const rotated = (name: string, targetType: string) => ({
+      item_name: name,
+      item_type: 'ROTATED_SECRET',
+      client_permissions: ['ara_allow_access'],
+      item_targets_assoc: [{ target_type: targetType }],
+    });
+    const dynamic = (name: string, producerType: string) => ({
+      item_name: name,
+      item_type: 'DYNAMIC_SECRET',
+      client_permissions: ['ara_allow_access'],
+      item_general_info: { dynamic_secret_producer_details: { producer_type: producerType } },
+    });
+
+    const secrets = mapAraSecrets([
+      rotated('/r/ssh', 'ssh'),
+      rotated('/r/windows', 'windows'),
+      rotated('/r/ldap', 'ldap'),
+      rotated('/r/linked', 'linked'),
+      dynamic('/d/rdp', 'rdp'),
+      dynamic('/d/ldap', 'ldap'),
+      rotated('/r/unsupported', 'vault'),
+    ]);
+
+    expect(secrets.map((s) => [s.name, s.secret_type, s.target_type])).toEqual([
+      ['/d/ldap', 'dynamic-secret', 'ldap'],
+      ['/d/rdp', 'dynamic-secret', 'rdp'],
+      ['/r/ldap', 'rotated-secret', 'ldap'],
+      ['/r/linked', 'rotated-secret', 'linked'],
+      ['/r/ssh', 'rotated-secret', 'ssh'],
+      ['/r/windows', 'rotated-secret', 'windows'],
+    ]);
+  });
+
+  it('lists SSH certificate issuers as ssh-cert-issuer on the ssh target type', () => {
+    const secrets = mapAraSecrets([
+      {
+        item_name: '/ssh/prod-ca',
+        item_type: 'SSH_CERT_ISSUER',
+        item_metadata: 'prod hosts',
+        client_permissions: ['ara_allow_access'],
+      },
+      {
+        item_name: '/ssh/no-ara',
+        item_type: 'SSH_CERT_ISSUER',
+        client_permissions: ['read'],
+      },
+    ]);
+
+    expect(secrets).toEqual([
+      { name: '/ssh/prod-ca', secret_type: 'ssh-cert-issuer', target_type: 'ssh', description: 'prod hosts' },
+    ]);
+  });
+
+  it('does not count SSH certificate issuers as unrecognized in diagnostics', () => {
+    const diagnostics = diagnoseAraList([
+      { item_name: '/ssh/prod-ca', item_type: 'SSH_CERT_ISSUER', client_permissions: ['ara_allow_access'] },
+    ]);
+    expect(diagnostics.skipped_unrecognized_item_type).toBe(0);
   });
 });
 

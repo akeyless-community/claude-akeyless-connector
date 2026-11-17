@@ -4,6 +4,13 @@ import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 const AUTH_TIMEOUT_MS = 2 * 60 * 1000;
+const EXCHANGE_TIMEOUT_MS = 10 * 1000;
+/**
+ * Node's default (16 KB) answers 431 to a legacy `?creds=` callback carrying
+ * a large IdP token (e.g. Azure AD with many group claims). Matches Go's
+ * default `http.Server` limit used by the CLI callback.
+ */
+const CALLBACK_MAX_HEADER_BYTES = 1024 * 1024;
 
 export interface BrowserAuthResult {
   token: string;
@@ -33,6 +40,9 @@ export function buildAuthUrl(
   url.searchParams.set('access_id', accessId);
   url.searchParams.set('redirect_uri', redirectUri);
   url.searchParams.set('is_use_short_token', 'true');
+  // The callback gets a one-time auth_code instead of the credentials, like
+  // the CLI (`auth.ResponseModeAuthCode`); see exchangeAuthCode.
+  url.searchParams.set('response_mode', 'auth_code');
   // Same as Go AKEYLESS_PRODUCT=ara for SAML/OIDC login attribution.
   url.searchParams.set('product', 'ara');
   return url.toString();
@@ -80,7 +90,33 @@ function parseCredsParam(creds: string): BrowserAuthResult {
   };
 }
 
-function startCallbackServer(port: number): {
+/**
+ * Exchanges the callback's one-time auth code for a token through the
+ * gateway's `/api/exchange-auth-code`, like the CLI's `ExchangeAuthCodeViaGateway`.
+ */
+export async function exchangeAuthCode(authBaseUrl: string, authCode: string): Promise<BrowserAuthResult> {
+  const base = authBaseUrl.replace(/\/+$/, '');
+  const response = await fetch(`${base}/api/exchange-auth-code`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ auth_code: authCode }),
+    signal: AbortSignal.timeout(EXCHANGE_TIMEOUT_MS),
+  });
+  if (!response.ok) {
+    throw new Error(`Auth code exchange failed (${response.status})`);
+  }
+  const out = (await response.json()) as { token?: string; expires_at?: number };
+  const token = out.token?.trim();
+  if (!token || !out.expires_at) {
+    throw new Error('Auth code exchange did not return a token');
+  }
+  return { token, expiration: String(out.expires_at * 1000) };
+}
+
+export function startCallbackServer(
+  port: number,
+  authBaseUrl: string,
+): {
   redirectUri: string;
   waitForAuth: Promise<BrowserAuthResult>;
   close: () => void;
@@ -88,7 +124,7 @@ function startCallbackServer(port: number): {
   let server: Server | undefined;
 
   const waitForAuth = new Promise<BrowserAuthResult>((resolve, reject) => {
-    server = createServer((req, res) => {
+    server = createServer({ maxHeaderSize: CALLBACK_MAX_HEADER_BYTES }, (req, res) => {
       if (!req.url || req.url.split('?')[0] !== '/') {
         res.writeHead(404);
         res.end();
@@ -100,6 +136,22 @@ function startCallbackServer(port: number): {
       if (error) {
         writeErrorPage(res, error);
         reject(new Error(`Authentication failed: ${error}`));
+        return;
+      }
+
+      const authCode = url.searchParams.get('auth_code');
+      if (authCode) {
+        exchangeAuthCode(authBaseUrl, authCode).then(
+          (result) => {
+            writeSuccessPage(res);
+            resolve(result);
+          },
+          (err: unknown) => {
+            const message = err instanceof Error ? err.message : String(err);
+            writeErrorPage(res, 'Invalid auth code');
+            reject(new Error(message));
+          },
+        );
         return;
       }
 
@@ -140,7 +192,7 @@ export async function authenticateWithBrowser(
   }
 
   const port = options.port ?? (options.accessType === 'saml' ? 11136 : 11137);
-  const callback = startCallbackServer(port);
+  const callback = startCallbackServer(port, options.authBaseUrl);
   const authUrl = buildAuthUrl(
     options.authBaseUrl,
     options.accessType,

@@ -65,6 +65,8 @@ Example prompts:
 
 > "Use service-execute on `/prod/aws/devops` to list S3 buckets."
 
+> "Check disk usage on the host behind `/servers/web-ssh`."
+
 ### What happens under the hood
 
 | Step | Tool | What you see |
@@ -137,12 +139,38 @@ sequenceDiagram
 
 | Tool | Purpose |
 |---|---|
-| `list-secrets` | List ARA-enabled dynamic, rotated, and custom-MCP secrets your role can access |
+| `list-secrets` | List ARA-enabled dynamic, rotated, and custom-MCP secrets and SSH certificate issuers your role can access |
 | `query-db` | Run database queries (MySQL, PostgreSQL, MongoDB, Redis, etc.) |
-| `service-execute` | Run AWS, GCP, Azure, Kubernetes, GitHub, or custom MCP actions |
-| `list-sub-tools` | Optional: discover a service secret's sub-tool names/parameters before calling `service-execute` |
+| `service-execute` | Run AWS, GCP, Azure, Kubernetes, GitHub, or custom MCP actions, or a remote command on an SSH, Windows, or LDAP host |
+| `list-sub-tools` | Optional: discover the sub-tool names/parameters of a service secret or remote item before calling `service-execute` |
 
 These match the tools exposed by `akeyless mcp-runtime-authority`, but run through the SDK instead of the CLI.
+
+### Remote commands (SSH, Windows, LDAP)
+
+`service-execute` also runs one non-interactive command on a remote host, with the credentials of the item you name. The Gateway decides how to run it from the item's target type:
+
+| Item | `target_type` in list-secrets | Runs over |
+|---|---|---|
+| Rotated secret on an SSH target | `ssh` | SSH |
+| Rotated secret on a Windows target | `windows` | WinRM |
+| Rotated secret on a linked target | `linked` | SSH or WinRM, on one of the linked hosts |
+| RDP dynamic secret | `rdp` | SSH or WinRM, as the temporary user |
+| LDAP (Active Directory) rotated or dynamic secret | `ldap` | WinRM over HTTPS, as the domain user |
+| SSH certificate issuer (`secret_type: ssh-cert-issuer`) | `ssh` | SSH, with a short-lived certificate signed for the call |
+
+The payload is either a plain command line (`uptime`, `Get-Service`) or a sub-tool call for anything else:
+
+```json
+{"tool":"run","arguments":{"command":"systemctl status nginx","host":"web1.corp","cwd":"/var/log"}}
+```
+
+- `run` takes `command`, plus optional `host` (required when the item has more than one host; the error lists them), `cwd`, `shell` (`powershell` or `cmd`, WinRM only), `host_key_fingerprint` (`SHA256:<base64>`, SSH only), and `remote_user` (SSH certificate issuers only).
+- `upload` (`remote_path`, base64 `content`, at most 512 KB) and `download` (`remote_path`) move one file.
+- A run returns `stdout`, `stderr`, `exit_code`, `truncated`, and, when sent with `cwd` or run in PowerShell, the `cwd` the command ended in. Claude passes that `cwd` back on the next call, so a series of commands behaves like one shell session.
+- `list-sub-tools` on a remote item returns this catalog without connecting to the host.
+
+The same ARA gates apply as for databases: `ara_allow_access`, input rules (the Gateway ships default rules per target type), AI validation, output rules, and an ARA session record. Remote commands need Gateway 5.6.0 or later; an older Gateway answers `unsupported secret type`. A remote call can take up to 3.5 minutes on the Gateway.
 
 ## Install for Claude Desktop (recommended)
 
@@ -231,6 +259,8 @@ Or run locally after building:
 > "List my Akeyless ARA secrets and run `SELECT count(*) FROM customers` against the postgres read-only dynamic secret."
 
 > "Use service-execute on `/prod/aws/devops` to list all S3 buckets."
+
+> "Run `Get-Service -Name W3SVC` on the Windows host behind `/servers/iis-rotated`."
 
 > "What database secrets do I have access to?"
 

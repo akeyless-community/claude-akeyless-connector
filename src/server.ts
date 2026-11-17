@@ -5,7 +5,9 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
-import { isAraDbProducerType, isAraServiceProducerType, OAuthAuthorizationRequiredError } from './ara';
+import {
+  OAuthAuthorizationRequiredError,
+} from './ara';
 import { AkeylessClient } from './client';
 import { AKEYLESS_SDK_VERSION, CONNECTOR_VERSION } from './version';
 
@@ -13,24 +15,35 @@ const SERVER_INSTRUCTIONS = `Akeyless Agentic Runtime Authority (ARA) connector 
 
 Built with Akeyless Node.js SDK v${AKEYLESS_SDK_VERSION}.
 
-Use these tools to access protected databases and cloud services through Akeyless without exposing long-lived credentials.
+Use these tools to access protected databases, cloud services, and remote hosts through Akeyless without exposing long-lived credentials.
 
 Workflow:
-1. Call list-secrets to discover ARA-enabled dynamic, rotated, and custom-MCP secrets your role can access.
+1. Call list-secrets to discover ARA-enabled dynamic, rotated, and custom-MCP secrets and SSH certificate issuers your role can access.
 2. For database secrets (MySQL, PostgreSQL, etc.), use query-db with secret-name and payload.
 3. For service secrets (AWS, GCP, Azure, Kubernetes, GitHub, custom MCP), use service-execute with secret-name and payload.
-4. (Optional) Use list-sub-tools on a service secret to discover its exact sub-tool names and parameters before calling service-execute.
+4. For remote items (target_type ssh, windows, rdp, ldap, or linked, and SSH certificate issuers), use service-execute to run one non-interactive command on the host. The payload is either a literal command line (e.g. uptime, Get-Service) or a sub-tool call such as {"tool":"run","arguments":{"command":"<command>","host":"<host>"}} to pick the host, working directory (cwd), or shell, or to upload or download a file. The result has stdout, stderr, exit_code and, when cwd was sent, the cwd to pass to the next call.
+5. (Optional) Use list-sub-tools on a service secret or remote item to discover its exact sub-tool names and parameters before calling service-execute.
 
 Credentials are used server-side via the Akeyless Gateway. Secret values never appear in tool responses.
 
 Always provide agent-id for auditing. Use list-secrets before executing to confirm the secret path and target type.`;
 
-/** Builds a friendly, actionable message for an OAuth authorization-required response. */
-export function formatOAuthRequiredMessage(error: OAuthAuthorizationRequiredError): string {
+/**
+ * Builds the reply for an OAuth authorization-required response, worded like the
+ * Go handlers in `mcp_runtime_authority.go`: list-sub-tools has no auth-code or
+ * state parameters, so it points the agent at service-execute.
+ */
+export function formatOAuthRequiredMessage(error: OAuthAuthorizationRequiredError, toolName?: string): string {
+  const next =
+    toolName === 'list-sub-tools'
+      ? 'then call service-execute with the auth-code and state parameters to complete the flow.'
+      : 'then call this tool again with the auth-code and state parameters.';
   return (
     'This secret requires OAuth authorization. ' +
     'Please open the following URL in your browser to authorize, ' +
-    'then call this tool again with the auth-code and state parameters.\n\n' +
+    `${next}
+
+` +
     `Authorization URL: ${error.authorizationUrl}\nState: ${error.state}`
   );
 }
@@ -84,13 +97,13 @@ function buildQueryDbTool(defaultSecretName: string | undefined) {
       description: "The user's original natural-language request before the agent translated it into a query.",
     },
   };
-  const required = ['payload'];
+  const required = ['payload', 'agent-id', 'original-user', 'original-prompt'];
   if (!defaultSecretName) {
     Object.assign(
       properties,
       secretNameProperty('Full path of the Akeyless secret — dynamic or rotated (e.g. /MyFolder/my-mysql-ds).'),
     );
-    required.unshift('secret-name');
+    required.push('secret-name');
   }
 
   return {
@@ -102,11 +115,18 @@ function buildQueryDbTool(defaultSecretName: string | undefined) {
   };
 }
 
+/** Matches `remoteCallExample` in `remote_call.go`. */
+const REMOTE_CALL_EXAMPLE = '{"tool":"run","arguments":{"command":"<command>","host":"<host>"}}';
+
 /** Matches `NewServiceExecuteTool` in `ara_mcp_tools.go`. */
 function buildServiceExecuteTool(defaultSecretName: string | undefined) {
   let description =
-    'Execute an action against a service (AWS, GCP, Azure, Kubernetes, or GitHub) using Akeyless secret credentials (dynamic or rotated). ' +
-    "Accepts natural language or CLI-style payloads (e.g. 'list all S3 buckets', 'kubectl get pods -n default', 'list open PRs'). " +
+    'Execute an action against a service (AWS, GCP, Azure, Kubernetes, or GitHub) using Akeyless secret credentials (dynamic or rotated), ' +
+    'or run a single non-interactive command on a remote host: a shell command over SSH (SSH targets and SSH certificate issuers) or a PowerShell/CMD command over WinRM (Windows and LDAP items). ' +
+    'A remote command returns stdout, stderr, exit_code and cwd. ' +
+    "Accepts natural language or CLI-style payloads for services (e.g. 'list all S3 buckets', 'kubectl get pods -n default', 'list open PRs') and a literal command line for remote hosts (e.g. 'uptime', 'Get-Service'). " +
+    'To choose the host, the working directory or the shell, or to upload or download a file, send a remote item a sub-tool call as the payload, e.g. ' +
+    `${REMOTE_CALL_EXAMPLE}; list-sub-tools returns the remote sub-tools and their arguments. ` +
     'Returns the results as JSON. Credentials are never exposed.';
   if (!defaultSecretName) {
     description +=
@@ -140,13 +160,13 @@ function buildServiceExecuteTool(defaultSecretName: string | undefined) {
       description: "The user's original natural-language request before the agent translated it into an action.",
     },
   };
-  const required = ['payload'];
+  const required = ['payload', 'agent-id', 'original-user', 'original-prompt'];
   if (!defaultSecretName) {
     Object.assign(
       properties,
       secretNameProperty('Full path of the Akeyless secret — dynamic or rotated (e.g. /MyFolder/my-aws-ds).'),
     );
-    required.unshift('secret-name');
+    required.push('secret-name');
   }
 
   return {
@@ -184,7 +204,7 @@ function buildListSecretsTool() {
 /** Matches `NewListSubToolsTool` in `ara_mcp_tools.go`. */
 function buildListSubToolsTool(defaultSecretName: string | undefined) {
   const description =
-    'OPTIONAL helper for service secrets only (NOT for database secrets — query-db does not need this). ' +
+    'OPTIONAL helper for service secrets and remote items (SSH, Windows, LDAP, SSH certificate issuers); NOT for database secrets — query-db does not need this. ' +
     'Lists the sub-tools (and their parameters) that the service behind the given secret exposes. ' +
     'This call is never required: service-execute already accepts natural language or CLI-style payloads. ' +
     'Use it only when you want to discover the exact sub-tool name and parameters before calling service-execute, ' +
@@ -197,7 +217,7 @@ function buildListSubToolsTool(defaultSecretName: string | undefined) {
       description: 'Agent identifier for auditing and session-scoped credential caching.',
     },
   };
-  const required: string[] = [];
+  const required = ['agent-id'];
   if (!defaultSecretName) {
     Object.assign(
       properties,
@@ -271,7 +291,7 @@ export function createMcpServer(client?: AkeylessClient): Server {
       };
     } catch (error) {
       if (error instanceof OAuthAuthorizationRequiredError) {
-        return { content: [{ type: 'text', text: formatOAuthRequiredMessage(error) }] };
+        return { content: [{ type: 'text', text: formatOAuthRequiredMessage(error, request.params.name) }] };
       }
       const message = error instanceof Error ? error.message : String(error);
       return {
@@ -306,7 +326,7 @@ export async function handleToolCall(
         secrets: listed.secrets,
         ...(listed.diagnostics ? { diagnostics: listed.diagnostics } : {}),
         note: listed.secrets.length
-          ? 'Use query-db for database secrets or service-execute for cloud/K8s/GitHub/custom-MCP secrets.'
+          ? 'Use query-db for database secrets, or service-execute for cloud/K8s/GitHub/custom-MCP secrets and for remote commands on SSH, Windows, RDP, LDAP, linked, and SSH certificate issuer items.'
           : 'No ARA secrets matched. See diagnostics.troubleshooting for likely RBAC or ARA setup fixes.',
       };
     }
@@ -316,21 +336,13 @@ export async function handleToolCall(
         .object({
           'secret-name': z.string().min(1).optional(),
           payload: z.string().min(1),
-          'agent-id': z.string().optional(),
+          'agent-id': z.string().min(1),
           'original-user': z.string().optional(),
           'original-prompt': z.string().optional(),
         })
         .parse(args);
 
       const secretName = resolveSecretName(client, input['secret-name']);
-
-      const secrets = await client.listAraSecrets();
-      const secret = secrets.find((s) => s.name === secretName);
-      if (secret?.target_type && !isAraDbProducerType(secret.target_type)) {
-        throw new Error(
-          `Secret "${secretName}" is not a database secret. Use service-execute instead.`,
-        );
-      }
 
       const result = await client.executeTargetQuery({
         secretName,
@@ -351,7 +363,7 @@ export async function handleToolCall(
         .object({
           'secret-name': z.string().min(1).optional(),
           payload: z.string().min(1),
-          'agent-id': z.string().optional(),
+          'agent-id': z.string().min(1),
           'auth-code': z.string().optional(),
           state: z.string().optional(),
           'original-user': z.string().optional(),
@@ -360,14 +372,6 @@ export async function handleToolCall(
         .parse(args);
 
       const secretName = resolveSecretName(client, input['secret-name']);
-
-      const secrets = await client.listAraSecrets();
-      const secret = secrets.find((s) => s.name === secretName);
-      if (secret?.target_type && !isAraServiceProducerType(secret.target_type)) {
-        throw new Error(
-          `Secret "${secretName}" is not a service secret. Use query-db instead.`,
-        );
-      }
 
       const result = await client.executeTargetQuery({
         secretName,
@@ -389,7 +393,7 @@ export async function handleToolCall(
       const input = z
         .object({
           'secret-name': z.string().min(1).optional(),
-          'agent-id': z.string().optional(),
+          'agent-id': z.string().min(1),
         })
         .parse(args);
 
